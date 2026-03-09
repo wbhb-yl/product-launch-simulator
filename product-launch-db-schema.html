@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>📦 상품 출시 시뮬레이터 — DB 구조도</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+  /* ── Header ── */
+  .header { padding: 32px 40px 20px; border-bottom: 1px solid #1e293b; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #f8fafc; }
+  .header p  { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+  /* ── Tab Nav ── */
+  .tabs { display: flex; gap: 4px; padding: 20px 40px 0; border-bottom: 1px solid #1e293b; }
+  .tab  { padding: 9px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 13px; font-weight: 600;
+          border: 1px solid transparent; border-bottom: none; transition: all .2s; color: #64748b; background: transparent; }
+  .tab.active  { background: #1e293b; color: #f1f5f9; border-color: #334155; }
+  .tab:hover:not(.active) { color: #94a3b8; }
+
+  /* ── Content ── */
+  .content { padding: 28px 40px 60px; }
+
+  /* ── ERD ── */
+  .erd-wrap { position: relative; width: 100%; overflow-x: auto; }
+  .erd-canvas { position: relative; width: 1000px; height: 680px; margin: 0 auto; }
+  svg.erd-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  .tbl-box {
+    position: absolute;
+    background: #1e293b;
+    border: 1.5px solid #334155;
+    border-radius: 10px;
+    min-width: 180px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+    transition: box-shadow .2s, border-color .2s;
+    cursor: default;
+  }
+  .tbl-box:hover { border-color: #60a5fa; box-shadow: 0 4px 24px rgba(96,165,250,.25); }
+  .tbl-head {
+    padding: 8px 12px;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+    border-bottom: 1px solid #334155;
+  }
+  .tbl-head .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .tbl-row { padding: 4px 12px; font-size: 11px; display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #0f172a; }
+  .tbl-row:last-child { border-bottom: none; }
+  .tbl-row .col-name { color: #cbd5e1; }
+  .tbl-row .col-type { color: #475569; font-size: 10px; }
+  .tbl-row.pk .col-name { color: #fbbf24; font-weight: 700; }
+  .tbl-row.pk .col-type::before { content: '🔑 '; }
+  .tbl-row.fk .col-name { color: #60a5fa; }
+  .tbl-row.fk .col-type::before { content: '🔗 '; }
+
+  /* color classes */
+  .c-blue   .tbl-head { background: #1e3a5f; }
+  .c-blue   .dot       { background: #3b82f6; }
+  .c-purple .tbl-head  { background: #2d1b69; }
+  .c-purple .dot       { background: #8b5cf6; }
+  .c-green  .tbl-head  { background: #14532d; }
+  .c-green  .dot       { background: #22c55e; }
+  .c-orange .tbl-head  { background: #431407; }
+  .c-orange .dot       { background: #f97316; }
+  .c-teal   .tbl-head  { background: #134e4a; }
+  .c-teal   .dot       { background: #14b8a6; }
+  .c-pink   .tbl-head  { background: #500724; }
+  .c-pink   .dot       { background: #ec4899; }
+  .c-yellow .tbl-head  { background: #422006; }
+  .c-yellow .dot       { background: #eab308; }
+  .c-gray   .tbl-head  { background: #1e293b; }
+  .c-gray   .dot        { background: #94a3b8; }
+
+  /* ── Schema Cards ── */
+  .schema-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 16px; }
+  .schema-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; overflow: hidden; }
+  .schema-card-head { padding: 12px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #334155; }
+  .schema-card-head h3 { font-size: 14px; font-weight: 700; color: #f8fafc; font-family: 'Courier New', monospace; }
+  .schema-card-head span { font-size: 11px; color: #64748b; margin-left: auto; }
+  .schema-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .schema-table th { padding: 6px 12px; text-align: left; color: #64748b; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; background: #0f172a; border-bottom: 1px solid #1e293b; }
+  .schema-table td { padding: 6px 12px; border-bottom: 1px solid #1e2536; vertical-align: top; }
+  .schema-table tr:last-child td { border-bottom: none; }
+  .schema-table .col-name { color: #e2e8f0; font-family: 'Courier New', monospace; }
+  .schema-table .col-type { color: #7c3aed; font-family: 'Courier New', monospace; }
+  .schema-table .col-constraint { display: flex; flex-wrap: wrap; gap: 3px; }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .badge.pk     { background: #422006; color: #fbbf24; }
+  .badge.fk     { background: #1e3a5f; color: #60a5fa; }
+  .badge.nn     { background: #14532d; color: #4ade80; }
+  .badge.uq     { background: #2d1b69; color: #a78bfa; }
+  .badge.idx    { background: #134e4a; color: #2dd4bf; }
+  .badge.def    { background: #1e293b; color: #94a3b8; }
+  .schema-table .col-desc { color: #64748b; font-size: 11px; }
+  .schema-table tr:hover td { background: #1a2540; }
+
+  /* ── DDL ── */
+  .ddl-wrap { display: flex; flex-direction: column; gap: 12px; }
+  .ddl-block { background: #1e293b; border: 1px solid #334155; border-radius: 10px; overflow: hidden; }
+  .ddl-head { padding: 10px 16px; background: #0f172a; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .ddl-head span { font-size: 13px; color: #60a5fa; font-family: 'Courier New', monospace; font-weight: 700; }
+  .ddl-head small { color: #475569; margin-left: auto; font-size: 11px; }
+  .ddl-body { display: none; padding: 0; }
+  .ddl-body.open { display: block; }
+  pre { padding: 16px; font-size: 11.5px; line-height: 1.7; color: #cbd5e1; overflow-x: auto;
+        font-family: 'JetBrains Mono','Courier New',monospace; }
+  .kw  { color: #60a5fa; font-weight: 700; }
+  .tp  { color: #a78bfa; }
+  .cm  { color: #475569; font-style: italic; }
+  .str { color: #34d399; }
+  .nm  { color: #fbbf24; }
+
+  /* ── Relations ── */
+  .rel-table { width: 100%; border-collapse: collapse; }
+  .rel-table th { padding: 8px 14px; background: #0f172a; text-align: left; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+  .rel-table td { padding: 10px 14px; border-bottom: 1px solid #1e293b; font-size: 12px; vertical-align: middle; }
+  .rel-table tr:hover td { background: #1a2540; }
+  .rel-type { font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+  .rel-1n   { background: #1e3a5f; color: #60a5fa; }
+  .rel-nm   { background: #2d1b69; color: #a78bfa; }
+  .rel-11   { background: #14532d; color: #4ade80; }
+  .tname    { font-family: 'Courier New', monospace; color: #e2e8f0; font-size: 12px; }
+  .arrow    { color: #475569; }
+
+  /* ── Legend ── */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; padding: 12px 0 20px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; }
+
+  /* ── Summary ── */
+  .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+  .summary-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px; text-align: center; }
+  .summary-card .num { font-size: 28px; font-weight: 800; color: #60a5fa; }
+  .summary-card .lbl { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:#0f172a;border-bottom:1px solid #1e293b;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span style="font-size:18px;">🗄</span>
+    <span style="font-weight:700;font-size:14px;color:#e2e8f0;">DB 구조도</span>
+  </div>
+  <a href="index.html"
+     style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
+            background:#1e293b;color:#e2e8f0;text-decoration:none;font-size:13px;font-weight:600;
+            border:1px solid #334155;transition:all 0.2s;"
+     onmouseover="this.style.borderColor='#60a5fa';this.style.background='#263348'"
+     onmouseout="this.style.borderColor='#334155';this.style.background='#1e293b'">
+    ← 시뮬레이터로 돌아가기
+  </a>
+</div>
+
+<div class="header">
+  <h1>📦 상품 출시 시뮬레이터 — DB 구조도</h1>
+  <p>5G 요금제 상품 구성·검토·승인·출시 워크플로우를 지원하는 데이터베이스 스키마</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('erd')">🗺 ERD 다이어그램</div>
+  <div class="tab" onclick="showTab('schema')">📋 테이블 상세</div>
+  <div class="tab" onclick="showTab('relations')">🔗 관계 정의</div>
+  <div class="tab" onclick="showTab('ddl')">💾 SQL DDL</div>
+</div>
+
+<div class="content">
+
+<!-- ════════════════════════════════ ERD TAB ════════════════════════════════ -->
+<div id="tab-erd">
+  <div class="summary">
+    <div class="summary-card"><div class="num">8</div><div class="lbl">테이블</div></div>
+    <div class="summary-card"><div class="num">12</div><div class="lbl">관계 (FK)</div></div>
+    <div class="summary-card"><div class="num">52</div><div class="lbl">총 컬럼 수</div></div>
+    <div class="summary-card"><div class="num">4</div><div class="lbl">워크플로우 단계</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span style="color:#fbbf24;font-size:14px;">🔑</span> Primary Key</div>
+    <div class="legend-item"><span style="color:#60a5fa;font-size:14px;">🔗</span> Foreign Key</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-left:8px;">
+      <div class="legend-item"><span style="background:#3b82f6;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 상품 도메인</div>
+      <div class="legend-item"><span style="background:#8b5cf6;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 기능 카탈로그</div>
+      <div class="legend-item"><span style="background:#22c55e;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 워크플로우</div>
+      <div class="legend-item"><span style="background:#f97316;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 승인/감사</div>
+      <div class="legend-item"><span style="background:#eab308;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 사용자</div>
+    </div>
+  </div>
+
+  <div class="erd-wrap">
+    <div class="erd-canvas">
+
+      <!-- SVG Connection Lines -->
+      <svg class="erd-lines" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#334155"/>
+          </marker>
+          <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+          </marker>
+          <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#8b5cf6"/>
+          </marker>
+          <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/>
+          </marker>
+          <marker id="arr-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#f97316"/>
+          </marker>
+        </defs>
+
+        <!-- users → products -->
+        <line x1="130" y1="100" x2="130" y2="218" stroke="#eab308" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+        <!-- feature_categories → features -->
+        <line x1="700" y1="108" x2="700" y2="218" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-purple)"/>
+        <!-- products → product_features -->
+        <line x1="222" y1="310" x2="358" y2="310" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+        <!-- features → product_features -->
+        <line x1="630" y1="290" x2="530" y2="290" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+        <!-- products → product_workflows -->
+        <line x1="130" y1="402" x2="130" y2="468" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <!-- workflow_steps → product_workflows -->
+        <line x1="700" y1="378" x2="700" y2="468" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+        <line x1="280" y1="490" x2="700" y2="490" stroke="#22c55e" stroke-width="1" stroke-dasharray="3,3"/>
+        <!-- products → review_checklists -->
+        <path d="M 60 380 Q 60 540 320 540" stroke="#14b8a6" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+        <!-- products → approvals -->
+        <path d="M 50 350 Q 30 580 620 580" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#arr-orange)"/>
+        <!-- users → approvals -->
+        <path d="M 200 80 Q 860 60 820 468" stroke="#eab308" stroke-width="1" stroke-dasharray="4,3" fill="none"/>
+      </svg>
+
+      <!-- ① users -->
+      <div class="tbl-box c-yellow" style="left:20px;top:20px;width:190px;">
+        <div class="tbl-head"><div class="dot"></div>users</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(60)</span></div>
+        <div class="tbl-row"><span class="col-name">email</span><span class="col-type">VARCHAR(120)</span></div>
+        <div class="tbl-row"><span class="col-name">role</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ② feature_categories -->
+      <div class="tbl-box c-purple" style="left:560px;top:20px;width:210px;">
+        <div class="tbl-head"><div class="dot"></div>feature_categories</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">code</span><span class="col-type">VARCHAR(30)</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(60)</span></div>
+        <div class="tbl-row"><span class="col-name">icon</span><span class="col-type">VARCHAR(10)</span></div>
+        <div class="tbl-row"><span class="col-name">sort_order</span><span class="col-type">INT</span></div>
+      </div>
+
+      <!-- ③ products -->
+      <div class="tbl-box c-blue" style="left:20px;top:218px;width:202px;">
+        <div class="tbl-head"><div class="dot"></div>products</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">created_by</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+        <div class="tbl-row"><span class="col-name">base_price</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">target_segment</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">contract_type</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">final_price</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ④ features -->
+      <div class="tbl-box c-purple" style="left:630px;top:218px;width:210px;">
+        <div class="tbl-head"><div class="dot"></div>features</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">category_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">code</span><span class="col-type">VARCHAR(50)</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(80)</span></div>
+        <div class="tbl-row"><span class="col-name">cost_amount</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">is_active</span><span class="col-type">BOOLEAN</span></div>
+        <div class="tbl-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑤ product_features (junction) -->
+      <div class="tbl-box c-teal" style="left:358px;top:258px;width:200px;">
+        <div class="tbl-head"><div class="dot"></div>product_features</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">product_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">feature_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">cost_snapshot</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">added_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑥ workflow_steps (ref) -->
+      <div class="tbl-box c-green" style="left:630px;top:378px;width:210px;">
+        <div class="tbl-head"><div class="dot"></div>workflow_steps</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">code</span><span class="col-type">VARCHAR(30)</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(60)</span></div>
+        <div class="tbl-row"><span class="col-name">sort_order</span><span class="col-type">INT</span></div>
+      </div>
+
+      <!-- ⑦ product_workflows -->
+      <div class="tbl-box c-green" style="left:20px;top:468px;width:260px;">
+        <div class="tbl-head"><div class="dot"></div>product_workflows</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">product_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">step_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">performed_by</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">started_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="tbl-row"><span class="col-name">completed_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑧ review_checklists -->
+      <div class="tbl-box c-teal" style="left:320px;top:510px;width:230px;">
+        <div class="tbl-head"><div class="dot"></div>review_checklists</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">product_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">checklist_key</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">is_checked</span><span class="col-type">BOOLEAN</span></div>
+        <div class="tbl-row fk"><span class="col-name">checked_by</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">checked_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑨ approvals -->
+      <div class="tbl-box c-orange" style="left:620px;top:510px;width:220px;">
+        <div class="tbl-head"><div class="dot"></div>approvals</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">product_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">approver_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">decision</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">comment</span><span class="col-type">TEXT</span></div>
+        <div class="tbl-row"><span class="col-name">decided_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+    </div><!-- /erd-canvas -->
+  </div><!-- /erd-wrap -->
+</div>
+
+<!-- ════════════════════════════════ SCHEMA TAB ════════════════════════════════ -->
+<div id="tab-schema" class="hidden">
+  <div class="schema-grid">
+
+    <!-- users -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #eab308;">
+        <span style="font-size:16px;">👤</span>
+        <h3>users</h3>
+        <span>사용자 (기획자 / 승인자)</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span><span class="badge nn">NN</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(60)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">사용자 이름</td></tr>
+        <tr><td class="col-name">email</td><td class="col-type">VARCHAR(120)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">로그인 이메일</td></tr>
+        <tr><td class="col-name">role</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge def">DEF</span></td><td class="col-desc">planner / reviewer / approver / admin</td></tr>
+        <tr><td class="col-name">is_active</td><td class="col-type">BOOLEAN</td><td class="col-constraint"><span class="badge def">DEF:1</span></td><td class="col-desc">활성 여부</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">가입일시</td></tr>
+      </table>
+    </div>
+
+    <!-- feature_categories -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #8b5cf6;">
+        <span style="font-size:16px;">🗂</span>
+        <h3>feature_categories</h3>
+        <span>기능 카테고리</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">code</td><td class="col-type">VARCHAR(30)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">network / data / ott / benefit</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(60)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">표시 이름</td></tr>
+        <tr><td class="col-name">icon</td><td class="col-type">VARCHAR(10)</td><td></td><td class="col-desc">이모지 아이콘</td></tr>
+        <tr><td class="col-name">sort_order</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge def">DEF:0</span></td><td class="col-desc">표시 순서</td></tr>
+      </table>
+    </div>
+
+    <!-- features -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #8b5cf6;">
+        <span style="font-size:16px;">⚙️</span>
+        <h3>features</h3>
+        <span>기능 카탈로그</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">category_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ feature_categories.id</td></tr>
+        <tr><td class="col-name">code</td><td class="col-type">VARCHAR(50)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">5g_sa / netflix / tethering …</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(80)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">표시명</td></tr>
+        <tr><td class="col-name">icon</td><td class="col-type">VARCHAR(10)</td><td></td><td class="col-desc">이모지</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">VARCHAR(200)</td><td></td><td class="col-desc">기능 설명</td></tr>
+        <tr><td class="col-name">cost_amount</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge def">DEF:0</span></td><td class="col-desc">원가 (음수=할인)</td></tr>
+        <tr><td class="col-name">is_active</td><td class="col-type">BOOLEAN</td><td class="col-constraint"><span class="badge def">DEF:1</span><span class="badge idx">IDX</span></td><td class="col-desc">활성/비활성</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">등록일시</td></tr>
+      </table>
+    </div>
+
+    <!-- products -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #3b82f6;">
+        <span style="font-size:16px;">📦</span>
+        <h3>products</h3>
+        <span>상품 (요금제)</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">created_by</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ users.id (기획자)</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(100)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">상품명</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="col-desc">상품 설명</td></tr>
+        <tr><td class="col-name">base_price</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">기본료 (원)</td></tr>
+        <tr><td class="col-name">final_price</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">기능 포함 최종가</td></tr>
+        <tr><td class="col-name">target_segment</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">all/new/premium/enterprise</td></tr>
+        <tr><td class="col-name">contract_type</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">monthly/12month/24month</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">draft/review/approved/launched/rejected</td></tr>
+        <tr><td class="col-name">launched_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">출시 확정일시</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">생성일시</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">수정일시</td></tr>
+      </table>
+    </div>
+
+    <!-- product_features -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #14b8a6;">
+        <span style="font-size:16px;">🔗</span>
+        <h3>product_features</h3>
+        <span>상품-기능 연결 (N:M 해소)</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">product_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ products.id</td></tr>
+        <tr><td class="col-name">feature_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ features.id</td></tr>
+        <tr><td class="col-name">cost_snapshot</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">선택 당시 비용 스냅샷</td></tr>
+        <tr><td class="col-name">added_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">기능 추가일시</td></tr>
+        <tr style="background:#0f172a"><td colspan="4" style="padding:6px 12px;font-size:11px;color:#475569;">UNIQUE (product_id, feature_id)</td></tr>
+      </table>
+    </div>
+
+    <!-- workflow_steps -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #22c55e;">
+        <span style="font-size:16px;">🪜</span>
+        <h3>workflow_steps</h3>
+        <span>워크플로우 단계 정의 (참조)</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">code</td><td class="col-type">VARCHAR(30)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">configure/review/approve/launch</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(60)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">단계명 (기능구성 등)</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="col-desc">단계 설명</td></tr>
+        <tr><td class="col-name">sort_order</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">순서 (1,2,3,4)</td></tr>
+      </table>
+    </div>
+
+    <!-- product_workflows -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #22c55e;">
+        <span style="font-size:16px;">📋</span>
+        <h3>product_workflows</h3>
+        <span>상품별 워크플로우 진행 이력</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">product_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ products.id</td></tr>
+        <tr><td class="col-name">step_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ workflow_steps.id</td></tr>
+        <tr><td class="col-name">performed_by</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span></td><td class="col-desc">→ users.id (수행자)</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">pending/in_progress/completed/rejected</td></tr>
+        <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="col-desc">단계 메모</td></tr>
+        <tr><td class="col-name">started_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">단계 시작일시</td></tr>
+        <tr><td class="col-name">completed_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">단계 완료일시</td></tr>
+      </table>
+    </div>
+
+    <!-- review_checklists -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #14b8a6;">
+        <span style="font-size:16px;">✅</span>
+        <h3>review_checklists</h3>
+        <span>검토 단계 체크리스트</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">product_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ products.id</td></tr>
+        <tr><td class="col-name">checklist_key</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">legal/pricing/network/marketing</td></tr>
+        <tr><td class="col-name">is_checked</td><td class="col-type">BOOLEAN</td><td class="col-constraint"><span class="badge def">DEF:0</span></td><td class="col-desc">체크 여부</td></tr>
+        <tr><td class="col-name">checked_by</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span></td><td class="col-desc">→ users.id</td></tr>
+        <tr><td class="col-name">checked_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">체크 완료일시</td></tr>
+        <tr style="background:#0f172a"><td colspan="4" style="padding:6px 12px;font-size:11px;color:#475569;">UNIQUE (product_id, checklist_key)</td></tr>
+      </table>
+    </div>
+
+    <!-- approvals -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #f97316;">
+        <span style="font-size:16px;">🏛</span>
+        <h3>approvals</h3>
+        <span>승인/반려 결정 이력</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">product_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ products.id</td></tr>
+        <tr><td class="col-name">approver_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ users.id (승인자)</td></tr>
+        <tr><td class="col-name">decision</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">approved / rejected</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="col-desc">승인/반려 코멘트</td></tr>
+        <tr><td class="col-name">decided_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">결정일시</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════ RELATIONS TAB ════════════════════════════════ -->
+<div id="tab-relations" class="hidden">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;">
+    <table class="rel-table">
+      <tr>
+        <th>#</th><th>부모 테이블</th><th>관계</th><th>자식 테이블</th><th>FK 컬럼</th><th>설명</th><th>ON DELETE</th>
+      </tr>
+      <tr><td style="color:#64748b;font-size:12px;">1</td><td><span class="tname">users</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">products</span></td><td><code style="font-size:11px;color:#60a5fa;">created_by</code></td><td style="font-size:12px;color:#94a3b8;">한 사용자가 여러 상품 생성</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">2</td><td><span class="tname">feature_categories</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">features</span></td><td><code style="font-size:11px;color:#60a5fa;">category_id</code></td><td style="font-size:12px;color:#94a3b8;">카테고리 1개에 여러 기능</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">3</td><td><span class="tname">products</span></td><td><span class="rel-type rel-nm">N : M</span></td><td><span class="tname">features</span></td><td><code style="font-size:11px;color:#60a5fa;">product_features</code></td><td style="font-size:12px;color:#94a3b8;">상품은 여러 기능 포함, 기능은 여러 상품에 사용</td><td style="font-size:11px;color:#475569;">CASCADE</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">4</td><td><span class="tname">products</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">product_workflows</span></td><td><code style="font-size:11px;color:#60a5fa;">product_id</code></td><td style="font-size:12px;color:#94a3b8;">상품 1개의 워크플로우 단계별 이력</td><td style="font-size:11px;color:#475569;">CASCADE</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">5</td><td><span class="tname">workflow_steps</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">product_workflows</span></td><td><code style="font-size:11px;color:#60a5fa;">step_id</code></td><td style="font-size:12px;color:#94a3b8;">단계 정의 1개에 여러 실행 이력</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">6</td><td><span class="tname">users</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">product_workflows</span></td><td><code style="font-size:11px;color:#60a5fa;">performed_by</code></td><td style="font-size:12px;color:#94a3b8;">각 단계를 수행한 담당자</td><td style="font-size:11px;color:#475569;">SET NULL</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">7</td><td><span class="tname">products</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">review_checklists</span></td><td><code style="font-size:11px;color:#60a5fa;">product_id</code></td><td style="font-size:12px;color:#94a3b8;">상품 1개에 체크리스트 항목들</td><td style="font-size:11px;color:#475569;">CASCADE</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">8</td><td><span class="tname">users</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">review_checklists</span></td><td><code style="font-size:11px;color:#60a5fa;">checked_by</code></td><td style="font-size:12px;color:#94a3b8;">체크 수행자</td><td style="font-size:11px;color:#475569;">SET NULL</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">9</td><td><span class="tname">products</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">approvals</span></td><td><code style="font-size:11px;color:#60a5fa;">product_id</code></td><td style="font-size:12px;color:#94a3b8;">상품의 승인 이력 (반려 후 재승인 가능)</td><td style="font-size:11px;color:#475569;">CASCADE</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">10</td><td><span class="tname">users</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">approvals</span></td><td><code style="font-size:11px;color:#60a5fa;">approver_id</code></td><td style="font-size:12px;color:#94a3b8;">승인자</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">11</td><td><span class="tname">products</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">product_features</span></td><td><code style="font-size:11px;color:#60a5fa;">product_id</code></td><td style="font-size:12px;color:#94a3b8;">N:M 해소 테이블 (제품→)</td><td style="font-size:11px;color:#475569;">CASCADE</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">12</td><td><span class="tname">features</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">product_features</span></td><td><code style="font-size:11px;color:#60a5fa;">feature_id</code></td><td style="font-size:12px;color:#94a3b8;">N:M 해소 테이블 (기능→)</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ DDL TAB ════════════════════════════════ -->
+<div id="tab-ddl" class="hidden">
+  <div class="ddl-wrap">
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)">
+        <span>users</span><small>▼ 펼치기</small>
+      </div>
+      <div class="ddl-body open">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">users</span> (
+  <span class="nm">id</span>          <span class="tp">BIGINT</span>       <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">name</span>        <span class="tp">VARCHAR(60)</span>  <span class="kw">NOT NULL</span>,
+  <span class="nm">email</span>       <span class="tp">VARCHAR(120)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">role</span>        <span class="tp">ENUM</span>(<span class="str">'planner'</span>,<span class="str">'reviewer'</span>,<span class="str">'approver'</span>,<span class="str">'admin'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'planner'</span>,
+  <span class="nm">is_active</span>   <span class="tp">BOOLEAN</span>      <span class="kw">NOT NULL DEFAULT</span> <span class="str">TRUE</span>,
+  <span class="nm">created_at</span>  <span class="tp">TIMESTAMP</span>    <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>  <span class="nm">uq_users_email</span> (<span class="nm">email</span>)
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)">
+        <span>feature_categories</span><small>▼ 펼치기</small>
+      </div>
+      <div class="ddl-body open">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">feature_categories</span> (
+  <span class="nm">id</span>          <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">code</span>        <span class="tp">VARCHAR(30)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">name</span>        <span class="tp">VARCHAR(60)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">icon</span>        <span class="tp">VARCHAR(10)</span>,
+  <span class="nm">sort_order</span>  <span class="tp">INT</span>         <span class="kw">NOT NULL DEFAULT</span> 0,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>  <span class="nm">uq_fc_code</span> (<span class="nm">code</span>)
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)">
+        <span>features</span><small>▼ 펼치기</small>
+      </div>
+      <div class="ddl-body open">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">features</span> (
+  <span class="nm">id</span>           <span class="tp">BIGINT</span>       <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">category_id</span>  <span class="tp">BIGINT</span>       <span class="kw">NOT NULL</span>,
+  <span class="nm">code</span>         <span class="tp">VARCHAR(50)</span>  <span class="kw">NOT NULL</span>,
+  <span class="nm">name</span>         <span class="tp">VARCHAR(80)</span>  <span class="kw">NOT NULL</span>,
+  <span class="nm">icon</span>         <span class="tp">VARCHAR(10)</span>,
+  <span class="nm">description</span>  <span class="tp">VARCHAR(200)</span>,
+  <span class="nm">cost_amount</span>  <span class="tp">INT</span>          <span class="kw">NOT NULL DEFAULT</span> 0,
+  <span class="nm">is_active</span>    <span class="tp">BOOLEAN</span>      <span class="kw">NOT NULL DEFAULT</span> <span class="str">TRUE</span>,
+  <span class="nm">created_at</span>   <span class="tp">TIMESTAMP</span>    <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>   <span class="nm">uq_features_code</span> (<span class="nm">code</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_features_active</span> (<span class="nm">is_active</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_features_category</span>
+    <span class="kw">FOREIGN KEY</span> (<span class="nm">category_id</span>) <span class="kw">REFERENCES</span> <span class="nm">feature_categories</span>(<span class="nm">id</span>)
+    <span class="kw">ON DELETE RESTRICT ON UPDATE CASCADE</span>
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)">
+        <span>products</span><small>▼ 펼치기</small>
+      </div>
+      <div class="ddl-body open">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">products</span> (
+  <span class="nm">id</span>               <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">created_by</span>       <span class="tp">BIGINT</span>      <span class="kw">NOT NULL</span>,
+  <span class="nm">name</span>             <span class="tp">VARCHAR(100)</span><span class="kw">NOT NULL</span>,
+  <span class="nm">description</span>      <span class="tp">TEXT</span>,
+  <span class="nm">base_price</span>       <span class="tp">INT</span>         <span class="kw">NOT NULL</span>,
+  <span class="nm">final_price</span>      <span class="tp">INT</span>         <span class="kw">NOT NULL</span>,
+  <span class="nm">target_segment</span>  <span class="tp">ENUM</span>(<span class="str">'all'</span>,<span class="str">'new'</span>,<span class="str">'premium'</span>,<span class="str">'enterprise'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'all'</span>,
+  <span class="nm">contract_type</span>   <span class="tp">ENUM</span>(<span class="str">'monthly'</span>,<span class="str">'12month'</span>,<span class="str">'24month'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'monthly'</span>,
+  <span class="nm">status</span>          <span class="tp">ENUM</span>(<span class="str">'draft'</span>,<span class="str">'review'</span>,<span class="str">'approved'</span>,<span class="str">'launched'</span>,<span class="str">'rejected'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'draft'</span>,
+  <span class="nm">launched_at</span>     <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="nm">created_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="nm">updated_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span> <span class="kw">ON UPDATE</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_products_status</span> (<span class="nm">status</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_products_user</span>
+    <span class="kw">FOREIGN KEY</span> (<span class="nm">created_by</span>) <span class="kw">REFERENCES</span> <span class="nm">users</span>(<span class="nm">id</span>)
+    <span class="kw">ON DELETE RESTRICT ON UPDATE CASCADE</span>
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)">
+        <span>product_features</span><small>▼ 펼치기</small>
+      </div>
+      <div class="ddl-body open">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">product_features</span> (
+  <span class="nm">id</span>             <span class="tp">BIGINT</span>    <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">product_id</span>     <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">feature_id</span>     <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">cost_snapshot</span>  <span class="tp">INT</span>       <span class="kw">NOT NULL</span>,  <span class="cm">-- 선택 당시 비용 고정</span>
+  <span class="nm">added_at</span>       <span class="tp">TIMESTAMP</span> <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>  <span class="nm">uq_pf</span> (<span class="nm">product_id</span>, <span class="nm">feature_id</span>),
+  <span class="kw">KEY</span>         <span class="nm">idx_pf_product</span> (<span class="nm">product_id</span>),
+  <span class="kw">CONSTRAINT</span>  <span class="nm">fk_pf_product</span>
+    <span class="kw">FOREIGN KEY</span> (<span class="nm">product_id</span>) <span class="kw">REFERENCES</span> <span class="nm">products</span>(<span class="nm">id</span>) <span class="kw">ON DELETE CASCADE</span>,
+  <span class="kw">CONSTRAINT</span>  <span class="nm">fk_pf_feature</span>
+    <span class="kw">FOREIGN KEY</span> (<span class="nm">feature_id</span>) <span class="kw">REFERENCES</span> <span class="nm">features</span>(<span class="nm">id</span>) <span class="kw">ON DELETE RESTRICT</span>
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)">
+        <span>workflow_steps + product_workflows + review_checklists + approvals</span><small>▼ 펼치기</small>
+      </div>
+      <div class="ddl-body">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">workflow_steps</span> (
+  <span class="nm">id</span>          <span class="tp">BIGINT</span>     <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">code</span>        <span class="tp">VARCHAR(30)</span><span class="kw">NOT NULL</span>,
+  <span class="nm">name</span>        <span class="tp">VARCHAR(60)</span><span class="kw">NOT NULL</span>,
+  <span class="nm">description</span> <span class="tp">TEXT</span>,
+  <span class="nm">sort_order</span>  <span class="tp">INT</span>        <span class="kw">NOT NULL</span>,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>  <span class="nm">uq_ws_code</span> (<span class="nm">code</span>)
+);
+
+<span class="kw">CREATE TABLE</span> <span class="nm">product_workflows</span> (
+  <span class="nm">id</span>           <span class="tp">BIGINT</span>    <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">product_id</span>   <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">step_id</span>      <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">performed_by</span> <span class="tp">BIGINT</span>    <span class="kw">NULL</span>,
+  <span class="nm">status</span>       <span class="tp">ENUM</span>(<span class="str">'pending'</span>,<span class="str">'in_progress'</span>,<span class="str">'completed'</span>,<span class="str">'rejected'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'pending'</span>,
+  <span class="nm">note</span>         <span class="tp">TEXT</span>,
+  <span class="nm">started_at</span>   <span class="tp">TIMESTAMP</span> <span class="kw">NULL</span>,
+  <span class="nm">completed_at</span> <span class="tp">TIMESTAMP</span> <span class="kw">NULL</span>,
+  <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_pw_product</span> (<span class="nm">product_id</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_pw_product</span>  <span class="kw">FOREIGN KEY</span> (<span class="nm">product_id</span>)   <span class="kw">REFERENCES</span> <span class="nm">products</span>(<span class="nm">id</span>)        <span class="kw">ON DELETE CASCADE</span>,
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_pw_step</span>     <span class="kw">FOREIGN KEY</span> (<span class="nm">step_id</span>)       <span class="kw">REFERENCES</span> <span class="nm">workflow_steps</span>(<span class="nm">id</span>) <span class="kw">ON DELETE RESTRICT</span>,
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_pw_user</span>     <span class="kw">FOREIGN KEY</span> (<span class="nm">performed_by</span>)  <span class="kw">REFERENCES</span> <span class="nm">users</span>(<span class="nm">id</span>)         <span class="kw">ON DELETE SET NULL</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="nm">review_checklists</span> (
+  <span class="nm">id</span>            <span class="tp">BIGINT</span>    <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">product_id</span>    <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">checklist_key</span> <span class="tp">ENUM</span>(<span class="str">'legal'</span>,<span class="str">'pricing'</span>,<span class="str">'network'</span>,<span class="str">'marketing'</span>) <span class="kw">NOT NULL</span>,
+  <span class="nm">is_checked</span>    <span class="tp">BOOLEAN</span>   <span class="kw">NOT NULL DEFAULT</span> <span class="str">FALSE</span>,
+  <span class="nm">checked_by</span>    <span class="tp">BIGINT</span>    <span class="kw">NULL</span>,
+  <span class="nm">checked_at</span>    <span class="tp">TIMESTAMP</span> <span class="kw">NULL</span>,
+  <span class="kw">PRIMARY KEY</span>   (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>    <span class="nm">uq_rc</span> (<span class="nm">product_id</span>, <span class="nm">checklist_key</span>),
+  <span class="kw">KEY</span>           <span class="nm">idx_rc_product</span> (<span class="nm">product_id</span>),
+  <span class="kw">CONSTRAINT</span>    <span class="nm">fk_rc_product</span>  <span class="kw">FOREIGN KEY</span> (<span class="nm">product_id</span>) <span class="kw">REFERENCES</span> <span class="nm">products</span>(<span class="nm">id</span>) <span class="kw">ON DELETE CASCADE</span>,
+  <span class="kw">CONSTRAINT</span>    <span class="nm">fk_rc_user</span>     <span class="kw">FOREIGN KEY</span> (<span class="nm">checked_by</span>) <span class="kw">REFERENCES</span> <span class="nm">users</span>(<span class="nm">id</span>)    <span class="kw">ON DELETE SET NULL</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="nm">approvals</span> (
+  <span class="nm">id</span>           <span class="tp">BIGINT</span>    <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">product_id</span>   <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">approver_id</span>  <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">decision</span>     <span class="tp">ENUM</span>(<span class="str">'approved'</span>,<span class="str">'rejected'</span>) <span class="kw">NOT NULL</span>,
+  <span class="nm">comment</span>      <span class="tp">TEXT</span>,
+  <span class="nm">decided_at</span>   <span class="tp">TIMESTAMP</span> <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_ap_product</span> (<span class="nm">product_id</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_ap_product</span>  <span class="kw">FOREIGN KEY</span> (<span class="nm">product_id</span>)  <span class="kw">REFERENCES</span> <span class="nm">products</span>(<span class="nm">id</span>) <span class="kw">ON DELETE CASCADE</span>,
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_ap_approver</span> <span class="kw">FOREIGN KEY</span> (<span class="nm">approver_id</span>) <span class="kw">REFERENCES</span> <span class="nm">users</span>(<span class="nm">id</span>)    <span class="kw">ON DELETE RESTRICT</span>
+);</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+function showTab(name) {
+  ['erd','schema','relations','ddl'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', ['erd','schema','relations','ddl'][i] === name);
+  });
+}
+function toggleDDL(head) {
+  const body = head.nextElementSibling;
+  const open = body.classList.toggle('open');
+  head.querySelector('small').textContent = open ? '▲ 접기' : '▼ 펼치기';
+}
+</script>
+</body>
+</html>
