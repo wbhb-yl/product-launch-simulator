@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📱 상품 출시 시뮬레이터</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f1f5f9; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif; }
+    input, select, textarea, button { font-family: inherit; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #2563eb; outline-offset: 1px; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #f1f5f9; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback } = React;
+
+// ─── 데이터 정의 ──────────────────────────────────────────────
+const FEATURE_CATALOG = {
+  network: [
+    { id: "5g_sa",   name: "5G SA (독립형)",    icon: "📡", desc: "지연 1ms, 최대 20Gbps",   cost: 30000 },
+    { id: "5g_nsa",  name: "5G NSA (비독립형)", icon: "📶", desc: "최대 1Gbps, LTE 혼용",    cost: 18000 },
+    { id: "lte_adv", name: "LTE-A Pro",          icon: "🔗", desc: "최대 500Mbps, 광대역",   cost: 10000 },
+    { id: "wifi6",   name: "Wi-Fi 6E 연동",      icon: "📲", desc: "실내 초고속 연동",        cost: 5000  },
+  ],
+  data: [
+    { id: "data_unlimited", name: "데이터 완전 무제한", icon: "♾️", desc: "속도 제한 없음",       cost: 25000 },
+    { id: "data_100gb",     name: "데이터 100GB",       icon: "💾", desc: "소진 후 1Mbps 유지",  cost: 12000 },
+    { id: "data_30gb",      name: "데이터 30GB",         icon: "📦", desc: "소진 후 400Kbps",     cost: 6000  },
+    { id: "tethering",      name: "테더링 무제한",       icon: "🔌", desc: "핫스팟 속도 제한 없음", cost: 8000 },
+  ],
+  ott: [
+    { id: "netflix",  name: "넷플릭스 4K",       icon: "🎬", desc: "4K UHD 스트리밍",    cost: 17000 },
+    { id: "youtube",  name: "유튜브 프리미엄",   icon: "▶️", desc: "광고 없는 유튜브",    cost: 14000 },
+    { id: "wavve",    name: "웨이브 오리지널",   icon: "🌊", desc: "국내 드라마/영화",    cost: 7900  },
+    { id: "spotify",  name: "스포티파이 Premium",icon: "🎵", desc: "무손실 음원",          cost: 10900 },
+  ],
+  benefit: [
+    { id: "roaming_asia",   name: "아시아 로밍 무료",     icon: "✈️", desc: "아시아 15개국 데이터",  cost: 9000  },
+    { id: "roaming_global", name: "글로벌 로밍 패키지",   icon: "🌍", desc: "전 세계 80개국",        cost: 20000 },
+    { id: "call_unlimited", name: "음성통화 무제한",       icon: "📞", desc: "이동·시내·시외 무제한", cost: 4000  },
+    { id: "sms_unlimited",  name: "문자 무제한",           icon: "✉️", desc: "SMS/MMS 무제한",        cost: 1000  },
+    { id: "family_share",   name: "가족 결합 할인",        icon: "👨‍👩‍👧", desc: "최대 4회선 20% 할인",  cost: -8000 },
+  ],
+};
+
+const CATEGORY_LABEL = {
+  network: "📡 네트워크 기술",
+  data:    "💾 데이터 옵션",
+  ott:     "🎬 OTT / 미디어",
+  benefit: "🎁 부가 혜택",
+};
+
+const STEPS = [
+  { id: "configure", label: "기능 구성", icon: "⚙️" },
+  { id: "review",    label: "검토",      icon: "🔍" },
+  { id: "approve",   label: "승인",      icon: "✅" },
+  { id: "launch",    label: "출시",      icon: "🚀" },
+];
+const STEP_IDX = { configure: 0, review: 1, approve: 2, launch: 3 };
+
+function currency(n) { return n.toLocaleString("ko-KR") + "원"; }
+
+// ─── Badge ────────────────────────────────────────────────────
+function Badge({ status }) {
+  const map = {
+    draft:    { label: "초안",    color: "#64748b" },
+    review:   { label: "검토중",  color: "#d97706" },
+    approved: { label: "승인완료",color: "#2563eb" },
+    launched: { label: "출시완료",color: "#16a34a" },
+    rejected: { label: "반려",    color: "#dc2626" },
+  };
+  const s = map[status] || map.draft;
+  return (
+    <span style={{ background: s.color, color: "#fff", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 700 }}>
+      {s.label}
+    </span>
+  );
+}
+
+// ─── StepBar ──────────────────────────────────────────────────
+function StepBar({ current }) {
+  const ci = STEP_IDX[current];
+  return (
+    <div style={{ display: "flex", alignItems: "center", marginBottom: 28 }}>
+      {STEPS.map((s, i) => {
+        const done   = i < ci;
+        const active = i === ci;
+        return (
+          <React.Fragment key={s.id}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: "50%",
+                background: done ? "#16a34a" : active ? "#2563eb" : "#e2e8f0",
+                color: done || active ? "#fff" : "#94a3b8",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: done ? 16 : 18, fontWeight: 700,
+                boxShadow: active ? "0 0 0 4px #bfdbfe" : "none",
+                transition: "all 0.3s",
+              }}>
+                {done ? "✓" : s.icon}
+              </div>
+              <span style={{ fontSize: 11, color: active ? "#2563eb" : done ? "#16a34a" : "#94a3b8", fontWeight: active ? 700 : 400, whiteSpace: "nowrap" }}>
+                {s.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div style={{ flex: 1, height: 3, background: done ? "#16a34a" : "#e2e8f0", margin: "0 4px", marginBottom: 18, borderRadius: 2, transition: "background 0.3s" }} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── InfoRow ──────────────────────────────────────────────────
+function InfoRow({ label, value }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{value}</div>
+    </div>
+  );
+}
+
+// ─── 공통 스타일 ──────────────────────────────────────────────
+const card        = { background:"#fff", borderRadius:14, padding:20, boxShadow:"0 1px 4px rgba(0,0,0,0.08)", border:"1px solid #f1f5f9" };
+const sectionTitle= { fontSize:15, fontWeight:700, color:"#1e293b", marginBottom:14, marginTop:0 };
+const labelStyle  = { display:"block", fontSize:12, fontWeight:600, color:"#64748b", marginBottom:4 };
+const inputStyle  = { width:"100%", padding:"9px 12px", border:"1.5px solid #e2e8f0", borderRadius:8, fontSize:13, color:"#1e293b", outline:"none", boxSizing:"border-box", background:"#fff" };
+const btnBase     = { padding:"10px 20px", borderRadius:9, border:"none", cursor:"pointer", fontSize:14, fontWeight:700, transition:"all 0.2s" };
+const btnPrimary  = { ...btnBase, background:"#2563eb", color:"#fff" };
+const btnSecondary= { ...btnBase, background:"#f1f5f9", color:"#475569" };
+const btnDanger   = { ...btnBase, background:"#fee2e2", color:"#dc2626" };
+const btnSuccess  = { ...btnBase, background:"#16a34a", color:"#fff" };
+
+const TARGET_LABEL   = { all:"전체 고객", new:"신규 가입자", premium:"프리미엄 등급", enterprise:"기업 고객" };
+const CONTRACT_LABEL = { monthly:"월정", "12month":"12개월", "24month":"24개월" };
+
+// ─── Step 1: 기능 구성 ────────────────────────────────────────
+function ConfigureStep({ product, setProduct, selected, setSelected, onNext }) {
+  const toggleFeature = useCallback((feat) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(feat.id) ? next.delete(feat.id) : next.add(feat.id);
+      return next;
+    });
+  }, [setSelected]);
+
+  const allFeatures    = Object.values(FEATURE_CATALOG).flat();
+  const selFeats       = allFeatures.filter(f => selected.has(f.id));
+  const featureTotal   = selFeats.reduce((s, f) => s + f.cost, 0);
+  const finalPrice     = (product.basePrice || 0) + featureTotal;
+  const canProceed     = product.name.trim() && product.basePrice > 0 && selected.size > 0;
+
+  return (
+    <div style={{ display:"flex", gap:20, alignItems:"flex-start" }}>
+      {/* 왼쪽 */}
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={card}>
+          <h3 style={sectionTitle}>📋 기본 정보</h3>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+            <div>
+              <label style={labelStyle}>상품명 *</label>
+              <input style={inputStyle} placeholder="예: 5G 프리미엄 플러스" value={product.name}
+                onChange={e => setProduct(p => ({ ...p, name: e.target.value }))} />
+            </div>
+            <div>
+              <label style={labelStyle}>기본료 (원) *</label>
+              <input style={inputStyle} type="number" placeholder="예: 55000" value={product.basePrice || ""}
+                onChange={e => setProduct(p => ({ ...p, basePrice: Number(e.target.value) }))} />
+            </div>
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <label style={labelStyle}>상품 설명</label>
+            <textarea style={{ ...inputStyle, height:64, resize:"vertical" }}
+              placeholder="고객에게 보여질 상품 설명을 입력하세요"
+              value={product.description}
+              onChange={e => setProduct(p => ({ ...p, description: e.target.value }))} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div>
+              <label style={labelStyle}>출시 대상</label>
+              <select style={inputStyle} value={product.target} onChange={e => setProduct(p => ({ ...p, target: e.target.value }))}>
+                <option value="all">전체 고객</option>
+                <option value="new">신규 가입자</option>
+                <option value="premium">프리미엄 등급</option>
+                <option value="enterprise">기업 고객</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>계약 기간</label>
+              <select style={inputStyle} value={product.contract} onChange={e => setProduct(p => ({ ...p, contract: e.target.value }))}>
+                <option value="monthly">월정</option>
+                <option value="12month">12개월</option>
+                <option value="24month">24개월</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {Object.entries(FEATURE_CATALOG).map(([cat, features]) => (
+          <div key={cat} style={{ ...card, marginTop:12 }}>
+            <h3 style={sectionTitle}>{CATEGORY_LABEL[cat]}</h3>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              {features.map(feat => {
+                const on = selected.has(feat.id);
+                return (
+                  <div key={feat.id} onClick={() => toggleFeature(feat)} style={{
+                    border: `2px solid ${on ? "#2563eb" : "#e2e8f0"}`,
+                    borderRadius:10, padding:"10px 12px", cursor:"pointer",
+                    background: on ? "#eff6ff" : "#fff", transition:"all 0.2s",
+                    display:"flex", alignItems:"center", gap:10,
+                  }}>
+                    <span style={{ fontSize:22 }}>{feat.icon}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:600, fontSize:13, color: on ? "#1d4ed8" : "#1e293b" }}>{feat.name}</div>
+                      <div style={{ fontSize:11, color:"#64748b", marginTop:1 }}>{feat.desc}</div>
+                      <div style={{ fontSize:12, fontWeight:700, color: feat.cost < 0 ? "#16a34a" : "#dc2626", marginTop:2 }}>
+                        {feat.cost < 0 ? "-" : "+"}{currency(Math.abs(feat.cost))}
+                      </div>
+                    </div>
+                    <div style={{
+                      width:22, height:22, borderRadius:"50%",
+                      border:`2px solid ${on ? "#2563eb" : "#cbd5e1"}`,
+                      background: on ? "#2563eb" : "transparent",
+                      display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+                    }}>
+                      {on && <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>✓</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 오른쪽 미리보기 */}
+      <div style={{ width:260, flexShrink:0 }}>
+        <div style={{ ...card, position:"sticky", top:20 }}>
+          <h3 style={sectionTitle}>📱 상품 미리보기</h3>
+          <div style={{ background:"linear-gradient(135deg,#1d4ed8 0%,#7c3aed 100%)", borderRadius:12, padding:16, color:"#fff", marginBottom:14 }}>
+            <div style={{ fontSize:11, opacity:0.8, marginBottom:4 }}>5G 요금제</div>
+            <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{product.name || "상품명을 입력하세요"}</div>
+            <div style={{ fontSize:26, fontWeight:800 }}>
+              {finalPrice > 0 ? currency(finalPrice) : "—"}
+              <span style={{ fontSize:13, fontWeight:400, opacity:0.8 }}>/월</span>
+            </div>
+          </div>
+
+          <div style={{ fontSize:12, color:"#64748b", marginBottom:8, fontWeight:600 }}>
+            선택된 기능 ({selFeats.length}개)
+          </div>
+          {selFeats.length === 0
+            ? <div style={{ color:"#94a3b8", fontSize:12, textAlign:"center", padding:"12px 0" }}>왼쪽에서 기능을 선택하세요</div>
+            : <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:12 }}>
+                {selFeats.map(f => (
+                  <div key={f.id} style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
+                    <span style={{ color:"#374151" }}>{f.icon} {f.name}</span>
+                    <span style={{ color: f.cost < 0 ? "#16a34a" : "#6b7280", fontWeight:600 }}>
+                      {f.cost < 0 ? "-" : "+"}{currency(Math.abs(f.cost))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+          }
+
+          <div style={{ borderTop:"1px solid #e2e8f0", paddingTop:10, marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+              <span style={{ color:"#64748b" }}>기본료</span>
+              <span>{product.basePrice ? currency(product.basePrice) : "—"}</span>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+              <span style={{ color:"#64748b" }}>기능 합산</span>
+              <span style={{ color: featureTotal < 0 ? "#16a34a" : "#374151" }}>
+                {featureTotal >= 0 ? "+" : ""}{currency(featureTotal)}
+              </span>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", fontWeight:700, fontSize:14, color:"#1e293b" }}>
+              <span>최종 요금</span>
+              <span style={{ color:"#2563eb" }}>{finalPrice > 0 ? currency(finalPrice) : "—"}</span>
+            </div>
+          </div>
+
+          <button onClick={onNext} disabled={!canProceed} style={{
+            ...btnPrimary, width:"100%", opacity: canProceed ? 1 : 0.4, cursor: canProceed ? "pointer" : "not-allowed",
+          }}>
+            검토 단계로 →
+          </button>
+          {!canProceed && <div style={{ fontSize:11, color:"#94a3b8", textAlign:"center", marginTop:6 }}>상품명·기본료·기능을 선택하세요</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 2: 검토 ─────────────────────────────────────────────
+function ReviewStep({ product, selected, onSubmit, onBack }) {
+  const allFeatures  = Object.values(FEATURE_CATALOG).flat();
+  const selFeats     = allFeatures.filter(f => selected.has(f.id));
+  const featureTotal = selFeats.reduce((s, f) => s + f.cost, 0);
+  const finalPrice   = (product.basePrice || 0) + featureTotal;
+
+  const [checklist, setChecklist] = useState({ legal:false, pricing:false, network:false, marketing:false });
+  const checkLabels = {
+    legal:     "법적 약관 및 고지사항 검토 완료",
+    pricing:   "가격 정책 및 원가 분석 검토 완료",
+    network:   "네트워크 용량 및 기술 검토 완료",
+    marketing: "마케팅 자료 및 홍보 계획 검토 완료",
+  };
+  const allChecked = Object.values(checklist).every(Boolean);
+
+  return (
+    <div style={{ maxWidth:700, margin:"0 auto" }}>
+      <div style={card}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <h3 style={{ ...sectionTitle, marginBottom:0 }}>🔍 상품 검토서</h3>
+          <Badge status="review" />
+        </div>
+
+        <div style={{ background:"#f8fafc", borderRadius:10, padding:16, marginBottom:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+            <InfoRow label="상품명" value={product.name} />
+            <InfoRow label="최종 요금" value={<span style={{ color:"#2563eb", fontWeight:700 }}>{currency(finalPrice)}/월</span>} />
+            <InfoRow label="출시 대상" value={TARGET_LABEL[product.target]} />
+            <InfoRow label="계약 기간" value={CONTRACT_LABEL[product.contract]} />
+          </div>
+          {product.description && (
+            <div><span style={{ fontSize:12, color:"#64748b" }}>설명: </span><span style={{ fontSize:12, color:"#374151" }}>{product.description}</span></div>
+          )}
+        </div>
+
+        <h4 style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:10 }}>구성 기능 ({selFeats.length}개)</h4>
+        {Object.entries(FEATURE_CATALOG).map(([cat, features]) => {
+          const catSel = features.filter(f => selected.has(f.id));
+          if (!catSel.length) return null;
+          return (
+            <div key={cat} style={{ marginBottom:10 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:"#64748b", marginBottom:6 }}>{CATEGORY_LABEL[cat]}</div>
+              {catSel.map(f => (
+                <div key={f.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 8px", background:"#f0fdf4", borderRadius:6, marginBottom:4 }}>
+                  <span>{f.icon}</span>
+                  <span style={{ flex:1, fontSize:13 }}>{f.name}</span>
+                  <span style={{ fontSize:12, color:"#64748b" }}>{f.desc}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color: f.cost < 0 ? "#16a34a" : "#dc2626" }}>
+                    {f.cost < 0 ? "-" : "+"}{currency(Math.abs(f.cost))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+
+        <div style={{ background:"#f8fafc", borderRadius:10, padding:14, marginTop:8, marginBottom:16 }}>
+          <h4 style={{ fontSize:13, fontWeight:700, marginBottom:8 }}>💰 가격 구조</h4>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}>
+            <span style={{ color:"#64748b" }}>기본료</span><span>{currency(product.basePrice)}</span>
+          </div>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}>
+            <span style={{ color:"#64748b" }}>기능 원가 합산</span><span>{currency(featureTotal)}</span>
+          </div>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:14, fontWeight:700, borderTop:"1px solid #e2e8f0", paddingTop:8 }}>
+            <span>최종 출시가</span><span style={{ color:"#2563eb" }}>{currency(finalPrice)}/월</span>
+          </div>
+        </div>
+
+        <h4 style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:10 }}>📋 검토 체크리스트</h4>
+        {Object.entries(checkLabels).map(([key, label]) => (
+          <div key={key} onClick={() => setChecklist(c => ({ ...c, [key]: !c[key] }))} style={{
+            display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8,
+            border:`1px solid ${checklist[key] ? "#bbf7d0" : "#e2e8f0"}`,
+            background: checklist[key] ? "#f0fdf4" : "#fff",
+            cursor:"pointer", marginBottom:6, transition:"all 0.2s",
+          }}>
+            <div style={{
+              width:20, height:20, borderRadius:4,
+              border:`2px solid ${checklist[key] ? "#16a34a" : "#cbd5e1"}`,
+              background: checklist[key] ? "#16a34a" : "transparent",
+              display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+            }}>
+              {checklist[key] && <span style={{ color:"#fff", fontSize:12 }}>✓</span>}
+            </div>
+            <span style={{ fontSize:13, color: checklist[key] ? "#15803d" : "#374151" }}>{label}</span>
+          </div>
+        ))}
+
+        <div style={{ display:"flex", gap:10, marginTop:16 }}>
+          <button onClick={onBack} style={{ ...btnSecondary, flex:1 }}>← 뒤로</button>
+          <button onClick={onSubmit} disabled={!allChecked} style={{
+            ...btnPrimary, flex:2, opacity: allChecked ? 1 : 0.4, cursor: allChecked ? "pointer" : "not-allowed",
+          }}>승인 요청 →</button>
+        </div>
+        {!allChecked && <div style={{ fontSize:11, color:"#94a3b8", textAlign:"center", marginTop:6 }}>모든 체크리스트를 완료해야 승인 요청이 가능합니다</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 3: 승인 ─────────────────────────────────────────────
+function ApproveStep({ product, selected, onApprove, onReject, onBack }) {
+  const allFeatures  = Object.values(FEATURE_CATALOG).flat();
+  const selFeats     = allFeatures.filter(f => selected.has(f.id));
+  const featureTotal = selFeats.reduce((s, f) => s + f.cost, 0);
+  const finalPrice   = (product.basePrice || 0) + featureTotal;
+  const [comment, setComment]         = useState("");
+  const [approverName, setApproverName] = useState("");
+
+  return (
+    <div style={{ maxWidth:600, margin:"0 auto" }}>
+      <div style={card}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <h3 style={{ ...sectionTitle, marginBottom:0 }}>✅ 출시 승인</h3>
+          <Badge status="review" />
+        </div>
+
+        <div style={{ background:"linear-gradient(135deg,#1d4ed8 0%,#7c3aed 100%)", borderRadius:12, padding:20, color:"#fff", marginBottom:20 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+            <div>
+              <div style={{ opacity:0.75, fontSize:12, marginBottom:4 }}>승인 대상 상품</div>
+              <div style={{ fontSize:20, fontWeight:800, marginBottom:4 }}>{product.name}</div>
+              <div style={{ opacity:0.8, fontSize:13 }}>구성 기능 {selFeats.length}개 · {TARGET_LABEL[product.target]}</div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ opacity:0.75, fontSize:12 }}>월 요금</div>
+              <div style={{ fontSize:28, fontWeight:800 }}>{currency(finalPrice)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>승인자 이름 *</label>
+          <input style={inputStyle} placeholder="이름을 입력하세요" value={approverName}
+            onChange={e => setApproverName(e.target.value)} />
+        </div>
+        <div style={{ marginBottom:20 }}>
+          <label style={labelStyle}>승인 코멘트</label>
+          <textarea style={{ ...inputStyle, height:80, resize:"vertical" }}
+            placeholder="승인/반려 사유를 입력하세요 (선택)"
+            value={comment} onChange={e => setComment(e.target.value)} />
+        </div>
+
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={onBack} style={btnSecondary}>← 뒤로</button>
+          <button onClick={() => onReject(comment, approverName)} disabled={!approverName.trim()} style={{
+            ...btnDanger, flex:1, opacity: approverName.trim() ? 1 : 0.4, cursor: approverName.trim() ? "pointer" : "not-allowed",
+          }}>✗ 반려</button>
+          <button onClick={() => onApprove(comment, approverName)} disabled={!approverName.trim()} style={{
+            ...btnSuccess, flex:2, opacity: approverName.trim() ? 1 : 0.4, cursor: approverName.trim() ? "pointer" : "not-allowed",
+          }}>✓ 승인 및 출시</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 4: 출시 결과 ────────────────────────────────────────
+function LaunchStep({ product, selected, approval, onReset }) {
+  const allFeatures  = Object.values(FEATURE_CATALOG).flat();
+  const selFeats     = allFeatures.filter(f => selected.has(f.id));
+  const featureTotal = selFeats.reduce((s, f) => s + f.cost, 0);
+  const finalPrice   = (product.basePrice || 0) + featureTotal;
+  const [tab, setTab] = useState("dashboard");
+  const isLaunched   = approval.status === "launched";
+  const launchDate   = new Date().toLocaleDateString("ko-KR", { year:"numeric", month:"long", day:"numeric" });
+
+  return (
+    <div style={{ maxWidth:720, margin:"0 auto" }}>
+      <div style={{
+        ...card,
+        background: isLaunched ? "linear-gradient(135deg,#15803d 0%,#0891b2 100%)" : "linear-gradient(135deg,#dc2626 0%,#9f1239 100%)",
+        color:"#fff", textAlign:"center", padding:32, marginBottom:20,
+      }}>
+        <div style={{ fontSize:56, marginBottom:8 }}>{isLaunched ? "🚀" : "❌"}</div>
+        <h2 style={{ fontSize:24, fontWeight:800, margin:0, marginBottom:8 }}>
+          {isLaunched ? "상품 출시 완료!" : "상품 출시 반려"}
+        </h2>
+        <div style={{ opacity:0.85, fontSize:14 }}>
+          {isLaunched ? `${launchDate} · 승인자: ${approval.approver}` : `반려 처리 · 담당자: ${approval.approver}`}
+        </div>
+        {approval.comment && (
+          <div style={{ background:"rgba(255,255,255,0.15)", borderRadius:8, padding:"8px 16px", marginTop:12, fontSize:13 }}>
+            💬 {approval.comment}
+          </div>
+        )}
+      </div>
+
+      {isLaunched && (
+        <>
+          <div style={{ display:"flex", gap:4, marginBottom:16 }}>
+            {[{id:"dashboard",label:"📊 대시보드"},{id:"detail",label:"📋 상품 상세"},{id:"history",label:"📜 이력"}].map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer",
+                fontWeight: tab === t.id ? 700 : 400,
+                background: tab === t.id ? "#2563eb" : "#f1f5f9",
+                color: tab === t.id ? "#fff" : "#64748b",
+                fontSize:13,
+              }}>{t.label}</button>
+            ))}
+          </div>
+
+          {tab === "dashboard" && (
+            <div style={card}>
+              <h3 style={sectionTitle}>📊 예상 성과 지표</h3>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:16 }}>
+                {[
+                  { label:"예상 가입자",       value:"12,400명",               sub:"첫 달 기준",     color:"#2563eb" },
+                  { label:"예상 월 매출",       value:currency(finalPrice*12400), sub:"첫 달 추산",  color:"#16a34a" },
+                  { label:"목표 시장점유율",   value:"3.2%",                    sub:"동일 등급 내",  color:"#7c3aed" },
+                ].map(m => (
+                  <div key={m.label} style={{ background:"#f8fafc", borderRadius:10, padding:14, textAlign:"center" }}>
+                    <div style={{ fontSize:11, color:"#64748b", marginBottom:4 }}>{m.label}</div>
+                    <div style={{ fontSize:18, fontWeight:800, color:m.color }}>{m.value}</div>
+                    <div style={{ fontSize:11, color:"#94a3b8" }}>{m.sub}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background:"#f0fdf4", borderRadius:10, padding:14 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:"#15803d", marginBottom:8 }}>✅ 출시 완료 체크리스트</div>
+                {["요금제 시스템 등록","홈페이지 상품 페이지 게시","고객센터 상품 안내 업데이트","마케팅 푸시 알림 발송 예약","판매 채널 상품 등록"].map(item => (
+                  <div key={item} style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#374151", marginBottom:4 }}>
+                    <span style={{ color:"#16a34a" }}>✓</span> {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "detail" && (
+            <div style={card}>
+              <h3 style={sectionTitle}>📋 출시 상품 상세</h3>
+              <div style={{ background:"linear-gradient(135deg,#1d4ed8 0%,#7c3aed 100%)", borderRadius:12, padding:20, color:"#fff", marginBottom:16 }}>
+                <div style={{ fontSize:13, opacity:0.8, marginBottom:4 }}>5G 요금제</div>
+                <div style={{ fontSize:22, fontWeight:800, marginBottom:6 }}>{product.name}</div>
+                {product.description && <div style={{ opacity:0.85, fontSize:13, marginBottom:12 }}>{product.description}</div>}
+                <div style={{ fontSize:30, fontWeight:800 }}>{currency(finalPrice)}<span style={{ fontSize:15, opacity:0.8, fontWeight:400 }}>/월</span></div>
+              </div>
+              {Object.entries(FEATURE_CATALOG).map(([cat, features]) => {
+                const catSel = features.filter(f => selected.has(f.id));
+                if (!catSel.length) return null;
+                return (
+                  <div key={cat} style={{ marginBottom:12 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:"#64748b", marginBottom:6 }}>{CATEGORY_LABEL[cat]}</div>
+                    {catSel.map(f => (
+                      <div key={f.id} style={{ display:"flex", gap:8, alignItems:"center", padding:"6px 0", borderBottom:"1px solid #f1f5f9" }}>
+                        <span style={{ fontSize:18 }}>{f.icon}</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:13, fontWeight:600 }}>{f.name}</div>
+                          <div style={{ fontSize:11, color:"#64748b" }}>{f.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {tab === "history" && (
+            <div style={card}>
+              <h3 style={sectionTitle}>📜 워크플로우 이력</h3>
+              {[
+                { time:"방금 전",  actor:"시스템",          action:"🚀 상품 출시 완료",           color:"#16a34a" },
+                { time:"2분 전",   actor:approval.approver, action:"✅ 출시 승인",                color:"#2563eb" },
+                { time:"10분 전",  actor:"운용팀",           action:"📋 검토 체크리스트 완료",     color:"#7c3aed" },
+                { time:"15분 전",  actor:"상품기획자",       action:"📝 상품 초안 작성 완료",     color:"#d97706" },
+              ].map((h, i) => (
+                <div key={i} style={{ display:"flex", gap:12, marginBottom:12, alignItems:"flex-start" }}>
+                  <div style={{ width:10, height:10, borderRadius:"50%", background:h.color, marginTop:4, flexShrink:0 }} />
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#1e293b" }}>{h.action}</div>
+                    <div style={{ fontSize:11, color:"#94a3b8" }}>{h.actor} · {h.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      <div style={{ marginTop:12 }}>
+        <button onClick={onReset} style={{ ...btnPrimary, width:"100%" }}>
+          {isLaunched ? "새 상품 만들기 +" : "다시 시작하기"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── 메인 App ─────────────────────────────────────────────────
+function App() {
+  const [step,     setStep]     = useState("configure");
+  const [product,  setProduct]  = useState({ name:"", basePrice:0, description:"", target:"all", contract:"monthly" });
+  const [selected, setSelected] = useState(new Set());
+  const [approval, setApproval] = useState({ status:"draft", approver:"", comment:"" });
+
+  const badgeStatus = step === "launch"
+    ? approval.status
+    : step === "approve" || step === "review"
+      ? "review"
+      : "draft";
+
+  const handleReset = () => {
+    setStep("configure");
+    setProduct({ name:"", basePrice:0, description:"", target:"all", contract:"monthly" });
+    setSelected(new Set());
+    setApproval({ status:"draft", approver:"", comment:"" });
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#f1f5f9", padding:"24px 16px" }}>
+      <div style={{ maxWidth:1100, margin:"0 auto" }}>
+        <div style={{ marginBottom:24 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
+            <span style={{ fontSize:28 }}>📱</span>
+            <h1 style={{ fontSize:22, fontWeight:800, color:"#1e293b", margin:0 }}>상품 출시 시뮬레이터</h1>
+            <Badge status={badgeStatus} />
+          </div>
+          <p style={{ color:"#64748b", fontSize:13, margin:0, marginLeft:40 }}>
+            기능을 조합해 5G 요금제 상품을 구성하고 검토 · 승인 · 출시 워크플로우를 시뮬레이션합니다
+          </p>
+        </div>
+
+        <StepBar current={step} />
+
+        {step === "configure" && (
+          <ConfigureStep product={product} setProduct={setProduct} selected={selected} setSelected={setSelected} onNext={() => setStep("review")} />
+        )}
+        {step === "review" && (
+          <ReviewStep product={product} selected={selected} onSubmit={() => setStep("approve")} onBack={() => setStep("configure")} />
+        )}
+        {step === "approve" && (
+          <ApproveStep
+            product={product} selected={selected}
+            onApprove={(comment, approver) => { setApproval({ status:"launched", approver, comment }); setStep("launch"); }}
+            onReject={(comment, approver)  => { setApproval({ status:"rejected", approver, comment }); setStep("launch"); }}
+            onBack={() => setStep("review")}
+          />
+        )}
+        {step === "launch" && (
+          <LaunchStep product={product} selected={selected} approval={approval} onReset={handleReset} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
