@@ -616,6 +616,35 @@ function App() {
   return (
     <div style={{ minHeight:"100vh", background:"#f1f5f9", padding:"24px 16px" }}>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
+
+        {/* ── 상단 네비게이션 바 ── */}
+        <div style={{
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          background:"#fff", border:"1px solid #e2e8f0", borderRadius:12,
+          padding:"10px 18px", marginBottom:20,
+          boxShadow:"0 1px 3px rgba(0,0,0,0.06)",
+        }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:20 }}>📱</span>
+            <span style={{ fontWeight:700, fontSize:14, color:"#1e293b" }}>상품 출시 시뮬레이터</span>
+          </div>
+          <a
+            href="product-launch-db-schema.html"
+            style={{
+              display:"inline-flex", alignItems:"center", gap:6,
+              padding:"7px 14px", borderRadius:8,
+              background:"#0f172a", color:"#e2e8f0",
+              textDecoration:"none", fontSize:13, fontWeight:600,
+              border:"1px solid #334155",
+              transition:"all 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background="#1e293b"; e.currentTarget.style.borderColor="#60a5fa"; }}
+            onMouseLeave={e => { e.currentTarget.style.background="#0f172a"; e.currentTarget.style.borderColor="#334155"; }}
+          >
+            <span style={{ fontSize:15 }}>🗄</span> DB 구조도 보기
+          </a>
+        </div>
+
         <div style={{ marginBottom:24 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
             <span style={{ fontSize:28 }}>📱</span>
