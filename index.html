@@ -891,7 +891,21 @@ function LifecycleSimulator() {
           <h3 style={sectionTitle}>고객 정보 입력</h3>
           <div style={{ display:"grid", gap:12 }}>
             <div><label style={labelStyle}>이름</label><input style={inputStyle} value={custName} onChange={e => setCustName(e.target.value)} placeholder="홍길동" /></div>
-            <div><label style={labelStyle}>연락처</label><input style={inputStyle} value={custPhone} onChange={e => setCustPhone(e.target.value)} placeholder="010-0000-0000" /></div>
+            <div>
+              <label style={labelStyle}>신규 번호</label>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <div style={{ ...inputStyle, flex:1, display:"flex", alignItems:"center", background:custPhone?"#f0fdf4":"#f8fafc", borderColor:custPhone?"#86efac":"#e2e8f0", color:custPhone?"#15803d":"#94a3b8", fontWeight:custPhone?700:400 }}>
+                  {custPhone || "번호를 생성해주세요"}
+                </div>
+                <button
+                  style={{ ...btnPrimary, padding:"9px 14px", fontSize:12, whiteSpace:"nowrap", flexShrink:0, background:custPhone?"#0f766e":"#2563eb" }}
+                  onClick={() => setCustPhone("010-" + Math.floor(1000 + Math.random() * 9000) + "-" + Math.floor(1000 + Math.random() * 9000))}
+                >
+                  {custPhone ? "🔄 재생성" : "✨ 번호 생성"}
+                </button>
+              </div>
+              {custPhone && <div style={{ fontSize:11, color:"#16a34a", marginTop:4 }}>✓ 신규 번호가 배정되었습니다</div>}
+            </div>
             <div><label style={labelStyle}>주민등록번호 앞 7자리</label><input style={inputStyle} value={custId} onChange={e => setCustId(e.target.value)} placeholder="YYMMDD-X" maxLength={8} /></div>
           </div>
         </div>
@@ -973,7 +987,7 @@ function LifecycleSimulator() {
   function ActivePanel() {
     return (
       <div style={{ display:"flex", gap:16, padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <CustomerCard />
+        {CustomerCard()}
         <div style={{ flex:1, display:"flex", flexDirection:"column", gap:12 }}>
           {changePlan ? (
             <div style={LC_CARD}>
@@ -1029,7 +1043,7 @@ function LifecycleSimulator() {
   function SuspendedPanel() {
     return (
       <div style={{ display:"flex", gap:16, padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <CustomerCard />
+        {CustomerCard()}
         <div style={{ flex:1 }}>
           <div style={{ ...LC_CARD, textAlign:"center", padding:32 }}>
             <div style={{ fontSize:48, marginBottom:8 }}>⏸</div>
@@ -1113,14 +1127,14 @@ function LifecycleSimulator() {
       )}
 
       <div style={{ maxWidth:900, margin:"0 auto", padding:"0 16px" }}>
-        {state === LC_STATES.idle        && <IdlePanel />}
-        {state === LC_STATES.ordering    && <OrderingPanel />}
-        {state === LC_STATES.verifying   && <VerifyingPanel />}
-        {state === LC_STATES.activating  && <ActivatingPanel />}
-        {state === LC_STATES.active      && <ActivePanel />}
-        {state === LC_STATES.suspended   && <SuspendedPanel />}
-        {state === LC_STATES.terminating && <TerminatingPanel />}
-        {state === LC_STATES.terminated  && <TerminatedPanel />}
+        {state === LC_STATES.idle        && IdlePanel()}
+        {state === LC_STATES.ordering    && OrderingPanel()}
+        {state === LC_STATES.verifying   && VerifyingPanel()}
+        {state === LC_STATES.activating  && ActivatingPanel()}
+        {state === LC_STATES.active      && ActivePanel()}
+        {state === LC_STATES.suspended   && SuspendedPanel()}
+        {state === LC_STATES.terminating && TerminatingPanel()}
+        {state === LC_STATES.terminated  && TerminatedPanel()}
       </div>
     </div>
   );

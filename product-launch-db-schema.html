@@ -162,14 +162,6 @@
        onmouseout="this.style.borderColor='#334155';this.style.background='#1e293b'">
       ← 상품 출시 시뮬레이터
     </a>
-    <a href="lifecycle-simulator.html"
-       style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
-              background:#1e293b;color:#e2e8f0;text-decoration:none;font-size:13px;font-weight:600;
-              border:1px solid #334155;transition:all 0.2s;"
-       onmouseover="this.style.borderColor='#14b8a6';this.style.background='#263348'"
-       onmouseout="this.style.borderColor='#334155';this.style.background='#1e293b'">
-      📡 라이프사이클 시뮬레이터
-    </a>
   </div>
 </div>
 
@@ -364,7 +356,7 @@
   <div class="summary">
     <div class="summary-card"><div class="num">9</div><div class="lbl">테이블</div></div>
     <div class="summary-card"><div class="num">8</div><div class="lbl">관계 (FK)</div></div>
-    <div class="summary-card"><div class="num">63</div><div class="lbl">총 컬럼 수</div></div>
+    <div class="summary-card"><div class="num">65</div><div class="lbl">총 컬럼 수</div></div>
     <div class="summary-card"><div class="num">7</div><div class="lbl">라이프사이클 상태</div></div>
   </div>
   <div class="legend">
@@ -463,6 +455,7 @@
         <div class="tbl-row fk"><span class="col-name">plan_id</span><span class="col-type">BIGINT</span></div>
         <div class="tbl-row fk"><span class="col-name">contract_type_id</span><span class="col-type">BIGINT</span></div>
         <div class="tbl-row"><span class="col-name">status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row" style="background:#1c2a1c;border-left:2px solid #4ade80;"><span class="col-name" style="color:#4ade80;">pre_reserved_msisdn</span><span class="col-type">VARCHAR(15)</span></div>
         <div class="tbl-row"><span class="col-name">msisdn</span><span class="col-type">VARCHAR(15)</span></div>
         <div class="tbl-row"><span class="col-name">sim_no</span><span class="col-type">VARCHAR(20)</span></div>
         <div class="tbl-row"><span class="col-name">monthly_price</span><span class="col-type">INT</span></div>
@@ -502,6 +495,7 @@
         <div class="tbl-row"><span class="col-name">msisdn</span><span class="col-type">VARCHAR(15)</span></div>
         <div class="tbl-row"><span class="col-name">status</span><span class="col-type">ENUM</span></div>
         <div class="tbl-row fk"><span class="col-name">subscription_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row" style="background:#1c2a1c;border-left:2px solid #4ade80;"><span class="col-name" style="color:#4ade80;">reserved_at</span><span class="col-type">TIMESTAMP</span></div>
         <div class="tbl-row"><span class="col-name">assigned_at</span><span class="col-type">TIMESTAMP</span></div>
         <div class="tbl-row"><span class="col-name">released_at</span><span class="col-type">TIMESTAMP</span></div>
       </div>
@@ -715,7 +709,7 @@
         <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
         <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span><span class="badge nn">NN</span></td><td class="col-desc">자동증가 기본키</td></tr>
         <tr><td class="col-name">name</td><td class="col-type">VARCHAR(60)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">고객 이름</td></tr>
-        <tr><td class="col-name">phone</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">연락처</td></tr>
+        <tr><td class="col-name">phone</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">연락처 (신규 가입 시 ordering 단계에서 자동 배정되는 사전 예약 번호)</td></tr>
         <tr><td class="col-name">id_number_prefix</td><td class="col-type">VARCHAR(8)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">주민번호 앞 7자리 (암호화)</td></tr>
         <tr><td class="col-name">credit_grade</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge def">DEF:A</span></td><td class="col-desc">신용등급 A/B/C/D</td></tr>
         <tr><td class="col-name">identity_verified</td><td class="col-type">BOOLEAN</td><td class="col-constraint"><span class="badge def">DEF:0</span></td><td class="col-desc">본인인증 완료 여부</td></tr>
@@ -792,7 +786,8 @@
         <tr><td class="col-name">plan_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ plans.id (현재 요금제)</td></tr>
         <tr><td class="col-name">contract_type_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ contract_types.id</td></tr>
         <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">ordering/verifying/activating/active/suspended/terminating/terminated</td></tr>
-        <tr><td class="col-name">msisdn</td><td class="col-type">VARCHAR(15)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">개통 전화번호 (개통 후 할당)</td></tr>
+        <tr style="background:#0f2a1a;"><td class="col-name" style="color:#4ade80;">pre_reserved_msisdn</td><td class="col-type">VARCHAR(15)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">ordering 단계 번호 자동 배정값 → msisdn_pool(reserved) 연동, 개통 후 msisdn으로 확정</td></tr>
+        <tr><td class="col-name">msisdn</td><td class="col-type">VARCHAR(15)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">개통 전화번호 (activating 완료 후 확정)</td></tr>
         <tr><td class="col-name">sim_no</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">SIM 카드 번호</td></tr>
         <tr><td class="col-name">monthly_price</td><td class="col-type">INT</td><td></td><td class="col-desc">최종 월 요금 (약정·부가 적용 후)</td></tr>
         <tr><td class="col-name">activated_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">개통 완료일시</td></tr>
@@ -832,7 +827,7 @@
         <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
         <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
         <tr><td class="col-name">subscription_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ subscriptions.id</td></tr>
-        <tr><td class="col-name">event_type</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">order_created / identity_verified / activated / plan_changed / suspended / resumed / terminated</td></tr>
+        <tr><td class="col-name">event_type</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">order_created / <span style="color:#4ade80;font-weight:700;">number_reserved</span> / identity_verified / activated / plan_changed / suspended / resumed / terminated</td></tr>
         <tr><td class="col-name">from_status</td><td class="col-type">ENUM</td><td></td><td class="col-desc">변경 전 상태</td></tr>
         <tr><td class="col-name">to_status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">변경 후 상태</td></tr>
         <tr><td class="col-name">reason</td><td class="col-type">VARCHAR(200)</td><td></td><td class="col-desc">사유 (고객 요청 / 연체 등)</td></tr>
@@ -851,10 +846,11 @@
         <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
         <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
         <tr><td class="col-name">msisdn</td><td class="col-type">VARCHAR(15)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">전화번호 (010-XXXX-XXXX)</td></tr>
-        <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">available / assigned / reserved</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">available → reserved (ordering 선점) → assigned (개통 확정) → released (해지 반납)</td></tr>
         <tr><td class="col-name">subscription_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span></td><td class="col-desc">→ subscriptions.id (할당된 가입)</td></tr>
-        <tr><td class="col-name">assigned_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">번호 할당일시</td></tr>
-        <tr><td class="col-name">released_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">번호 반납일시</td></tr>
+        <tr style="background:#0f2a1a;"><td class="col-name" style="color:#4ade80;">reserved_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">번호 사전 예약일시 (ordering 단계, 자동 번호 생성 시점)</td></tr>
+        <tr><td class="col-name">assigned_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">번호 최종 할당일시 (activating 완료 시점)</td></tr>
+        <tr><td class="col-name">released_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">번호 반납일시 (해지 완료 시점)</td></tr>
       </table>
     </div>
 
@@ -1165,7 +1161,8 @@
   <span class="nm">contract_type_id</span> <span class="tp">BIGINT</span>      <span class="kw">NOT NULL</span>,
   <span class="nm">status</span>           <span class="tp">ENUM</span>(<span class="str">'ordering'</span>,<span class="str">'verifying'</span>,<span class="str">'activating'</span>,<span class="str">'active'</span>,
                         <span class="str">'suspended'</span>,<span class="str">'terminating'</span>,<span class="str">'terminated'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'ordering'</span>,
-  <span class="nm">msisdn</span>           <span class="tp">VARCHAR(15)</span> <span class="kw">NULL</span>,
+  <span class="nm" style="color:#4ade80;">pre_reserved_msisdn</span> <span class="tp">VARCHAR(15)</span> <span class="kw">NULL</span>,                              <span class="cm">-- ordering 단계 자동 배정, msisdn_pool.reserved 연동</span>
+  <span class="nm">msisdn</span>           <span class="tp">VARCHAR(15)</span> <span class="kw">NULL</span>,                                  <span class="cm">-- activating 완료 후 확정</span>
   <span class="nm">sim_no</span>           <span class="tp">VARCHAR(20)</span> <span class="kw">NULL</span>,
   <span class="nm">monthly_price</span>    <span class="tp">INT</span>         <span class="kw">NULL</span>,
   <span class="nm">activated_at</span>     <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
@@ -1203,7 +1200,7 @@
 <span class="kw">CREATE TABLE</span> <span class="nm">lifecycle_events</span> (
   <span class="nm">id</span>               <span class="tp">BIGINT</span>       <span class="kw">NOT NULL AUTO_INCREMENT</span>,
   <span class="nm">subscription_id</span>  <span class="tp">BIGINT</span>       <span class="kw">NOT NULL</span>,
-  <span class="nm">event_type</span>       <span class="tp">ENUM</span>(<span class="str">'order_created'</span>,<span class="str">'identity_verified'</span>,<span class="str">'activated'</span>,
+  <span class="nm">event_type</span>       <span class="tp">ENUM</span>(<span class="str">'order_created'</span>,<span class="str" style="color:#4ade80;">'number_reserved'</span>,<span class="str">'identity_verified'</span>,<span class="str">'activated'</span>,
                         <span class="str">'plan_changed'</span>,<span class="str">'suspended'</span>,<span class="str">'resumed'</span>,<span class="str">'terminated'</span>) <span class="kw">NOT NULL</span>,
   <span class="nm">from_status</span>      <span class="tp">ENUM</span>(<span class="str">'ordering'</span>,<span class="str">'verifying'</span>,<span class="str">'activating'</span>,<span class="str">'active'</span>,
                         <span class="str">'suspended'</span>,<span class="str">'terminating'</span>,<span class="str">'terminated'</span>) <span class="kw">NULL</span>,
@@ -1219,10 +1216,11 @@
 <span class="kw">CREATE TABLE</span> <span class="nm">msisdn_pool</span> (
   <span class="nm">id</span>               <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
   <span class="nm">msisdn</span>           <span class="tp">VARCHAR(15)</span> <span class="kw">NOT NULL</span>,
-  <span class="nm">status</span>           <span class="tp">ENUM</span>(<span class="str">'available'</span>,<span class="str">'assigned'</span>,<span class="str">'reserved'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'available'</span>,
+  <span class="nm">status</span>           <span class="tp">ENUM</span>(<span class="str">'available'</span>,<span class="str">'reserved'</span>,<span class="str">'assigned'</span>,<span class="str">'released'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'available'</span>,  <span class="cm">-- available→reserved→assigned→released</span>
   <span class="nm">subscription_id</span>  <span class="tp">BIGINT</span>      <span class="kw">NULL</span>,
-  <span class="nm">assigned_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
-  <span class="nm">released_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="nm" style="color:#4ade80;">reserved_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,                                  <span class="cm">-- ordering 단계 번호 자동 생성 시점</span>
+  <span class="nm">assigned_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,                                  <span class="cm">-- activating 완료 후 확정 시점</span>
+  <span class="nm">released_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,                                  <span class="cm">-- 해지 후 반납 시점</span>
   <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
   <span class="kw">UNIQUE KEY</span>   <span class="nm">uq_mp_msisdn</span> (<span class="nm">msisdn</span>),
   <span class="kw">KEY</span>          <span class="nm">idx_mp_status</span> (<span class="nm">status</span>),
@@ -1264,7 +1262,7 @@ function showSection(sec) {
   // update summary
   const s = sec === 'launch'
     ? {tbl:8, fk:12, col:52, extra:'4 워크플로우 단계'}
-    : {tbl:9, fk:8,  col:63, extra:'7 라이프사이클 상태'};
+    : {tbl:9, fk:8,  col:65, extra:'7 라이프사이클 상태'};
   const nums = document.querySelectorAll('.summary-num-' + sec);
   // handled by separate summary cards per section
 }
