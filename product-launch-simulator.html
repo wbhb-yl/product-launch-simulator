@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📱 통신사 상품 시뮬레이터</title>
+  <title>📱 상품 출시 시뮬레이터</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -13,49 +13,14 @@
     input, select, textarea, button { font-family: inherit; }
     input:focus, select:focus, textarea:focus { outline: 2px solid #2563eb; outline-offset: 1px; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #f1f5f9; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.45; } }
   </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useCallback, useEffect, useRef } = React;
+const { useState, useCallback } = React;
 
-// ══════════════════════════════════════════════════════════════
-// 공통 네비게이션
-// ══════════════════════════════════════════════════════════════
-function TopNav({ page, setPage }) {
-  return (
-    <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:52, position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:20 }}>
-        <span style={{ fontSize:15, fontWeight:800, color:"#1e293b", letterSpacing:"-0.3px", whiteSpace:"nowrap" }}>📱 통신사 시뮬레이터</span>
-        <div style={{ display:"flex", gap:2 }}>
-          {[["launch","📦 상품 출시"],["lifecycle","🔄 라이프사이클"]].map(([key,label])=>(
-            <button key={key} onClick={()=>setPage(key)} style={{ padding:"6px 14px", borderRadius:7, border:"none", cursor:"pointer", fontSize:13, fontWeight:600, background:page===key?"#eff6ff":"transparent", color:page===key?"#2563eb":"#64748b", transition:"all .15s" }}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div style={{ display:"flex", gap:6 }}>
-        {page==="lifecycle" && (
-          <a href="lifecycle-simulator.html" style={{ padding:"6px 12px", borderRadius:7, border:"1px solid #e2e8f0", background:"transparent", color:"#64748b", fontSize:12, fontWeight:600, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
-            📋 TM Forum 참조
-          </a>
-        )}
-        <a href="product-launch-db-schema.html" style={{ padding:"6px 12px", borderRadius:7, border:"1px solid #e2e8f0", background:"transparent", color:"#64748b", fontSize:12, fontWeight:600, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
-          🗄 DB 구조도
-        </a>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════
-// 1. 상품 출시 시뮬레이터 (원본)
-// ══════════════════════════════════════════════════════════════
+// ─── 데이터 정의 ──────────────────────────────────────────────
 const FEATURE_CATALOG = {
   network: [
     { id: "5g_sa",   name: "5G SA (독립형)",    icon: "📡", desc: "지연 1ms, 최대 20Gbps",   cost: 30000 },
@@ -101,6 +66,7 @@ const STEP_IDX = { configure: 0, review: 1, approve: 2, launch: 3 };
 
 function currency(n) { return n.toLocaleString("ko-KR") + "원"; }
 
+// ─── Badge ────────────────────────────────────────────────────
 function Badge({ status }) {
   const map = {
     draft:    { label: "초안",    color: "#64748b" },
@@ -117,6 +83,7 @@ function Badge({ status }) {
   );
 }
 
+// ─── StepBar ──────────────────────────────────────────────────
 function StepBar({ current }) {
   const ci = STEP_IDX[current];
   return (
@@ -152,6 +119,7 @@ function StepBar({ current }) {
   );
 }
 
+// ─── InfoRow ──────────────────────────────────────────────────
 function InfoRow({ label, value }) {
   return (
     <div>
@@ -161,6 +129,7 @@ function InfoRow({ label, value }) {
   );
 }
 
+// ─── 공통 스타일 ──────────────────────────────────────────────
 const card        = { background:"#fff", borderRadius:14, padding:20, boxShadow:"0 1px 4px rgba(0,0,0,0.08)", border:"1px solid #f1f5f9" };
 const sectionTitle= { fontSize:15, fontWeight:700, color:"#1e293b", marginBottom:14, marginTop:0 };
 const labelStyle  = { display:"block", fontSize:12, fontWeight:600, color:"#64748b", marginBottom:4 };
@@ -174,6 +143,7 @@ const btnSuccess  = { ...btnBase, background:"#16a34a", color:"#fff" };
 const TARGET_LABEL   = { all:"전체 고객", new:"신규 가입자", premium:"프리미엄 등급", enterprise:"기업 고객" };
 const CONTRACT_LABEL = { monthly:"월정", "12month":"12개월", "24month":"24개월" };
 
+// ─── Step 1: 기능 구성 ────────────────────────────────────────
 function ConfigureStep({ product, setProduct, selected, setSelected, onNext }) {
   const toggleFeature = useCallback((feat) => {
     setSelected(prev => {
@@ -191,6 +161,7 @@ function ConfigureStep({ product, setProduct, selected, setSelected, onNext }) {
 
   return (
     <div style={{ display:"flex", gap:20, alignItems:"flex-start" }}>
+      {/* 왼쪽 */}
       <div style={{ flex:1, minWidth:0 }}>
         <div style={card}>
           <h3 style={sectionTitle}>📋 기본 정보</h3>
@@ -273,7 +244,7 @@ function ConfigureStep({ product, setProduct, selected, setSelected, onNext }) {
 
       {/* 오른쪽 미리보기 */}
       <div style={{ width:260, flexShrink:0 }}>
-        <div style={{ ...card, position:"sticky", top:72 }}>
+        <div style={{ ...card, position:"sticky", top:20 }}>
           <h3 style={sectionTitle}>📱 상품 미리보기</h3>
           <div style={{ background:"linear-gradient(135deg,#1d4ed8 0%,#7c3aed 100%)", borderRadius:12, padding:16, color:"#fff", marginBottom:14 }}>
             <div style={{ fontSize:11, opacity:0.8, marginBottom:4 }}>5G 요금제</div>
@@ -330,6 +301,7 @@ function ConfigureStep({ product, setProduct, selected, setSelected, onNext }) {
   );
 }
 
+// ─── Step 2: 검토 ─────────────────────────────────────────────
 function ReviewStep({ product, selected, onSubmit, onBack }) {
   const allFeatures  = Object.values(FEATURE_CATALOG).flat();
   const selFeats     = allFeatures.filter(f => selected.has(f.id));
@@ -431,12 +403,13 @@ function ReviewStep({ product, selected, onSubmit, onBack }) {
   );
 }
 
+// ─── Step 3: 승인 ─────────────────────────────────────────────
 function ApproveStep({ product, selected, onApprove, onReject, onBack }) {
   const allFeatures  = Object.values(FEATURE_CATALOG).flat();
   const selFeats     = allFeatures.filter(f => selected.has(f.id));
   const featureTotal = selFeats.reduce((s, f) => s + f.cost, 0);
   const finalPrice   = (product.basePrice || 0) + featureTotal;
-  const [comment, setComment]           = useState("");
+  const [comment, setComment]         = useState("");
   const [approverName, setApproverName] = useState("");
 
   return (
@@ -487,6 +460,7 @@ function ApproveStep({ product, selected, onApprove, onReject, onBack }) {
   );
 }
 
+// ─── Step 4: 출시 결과 ────────────────────────────────────────
 function LaunchStep({ product, selected, approval, onReset }) {
   const allFeatures  = Object.values(FEATURE_CATALOG).flat();
   const selFeats     = allFeatures.filter(f => selected.has(f.id));
@@ -536,9 +510,9 @@ function LaunchStep({ product, selected, approval, onReset }) {
               <h3 style={sectionTitle}>📊 예상 성과 지표</h3>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:16 }}>
                 {[
-                  { label:"예상 가입자",     value:"12,400명",               sub:"첫 달 기준",    color:"#2563eb" },
-                  { label:"예상 월 매출",     value:currency(finalPrice*12400), sub:"첫 달 추산", color:"#16a34a" },
-                  { label:"목표 시장점유율", value:"3.2%",                    sub:"동일 등급 내", color:"#7c3aed" },
+                  { label:"예상 가입자",       value:"12,400명",               sub:"첫 달 기준",     color:"#2563eb" },
+                  { label:"예상 월 매출",       value:currency(finalPrice*12400), sub:"첫 달 추산",  color:"#16a34a" },
+                  { label:"목표 시장점유율",   value:"3.2%",                    sub:"동일 등급 내",  color:"#7c3aed" },
                 ].map(m => (
                   <div key={m.label} style={{ background:"#f8fafc", borderRadius:10, padding:14, textAlign:"center" }}>
                     <div style={{ fontSize:11, color:"#64748b", marginBottom:4 }}>{m.label}</div>
@@ -592,10 +566,10 @@ function LaunchStep({ product, selected, approval, onReset }) {
             <div style={card}>
               <h3 style={sectionTitle}>📜 워크플로우 이력</h3>
               {[
-                { time:"방금 전",  actor:"시스템",          action:"🚀 상품 출시 완료",       color:"#16a34a" },
-                { time:"2분 전",   actor:approval.approver, action:"✅ 출시 승인",              color:"#2563eb" },
-                { time:"10분 전",  actor:"운용팀",           action:"📋 검토 체크리스트 완료", color:"#7c3aed" },
-                { time:"15분 전",  actor:"상품기획자",       action:"📝 상품 초안 작성 완료", color:"#d97706" },
+                { time:"방금 전",  actor:"시스템",          action:"🚀 상품 출시 완료",           color:"#16a34a" },
+                { time:"2분 전",   actor:approval.approver, action:"✅ 출시 승인",                color:"#2563eb" },
+                { time:"10분 전",  actor:"운용팀",           action:"📋 검토 체크리스트 완료",     color:"#7c3aed" },
+                { time:"15분 전",  actor:"상품기획자",       action:"📝 상품 초안 작성 완료",     color:"#d97706" },
               ].map((h, i) => (
                 <div key={i} style={{ display:"flex", gap:12, marginBottom:12, alignItems:"flex-start" }}>
                   <div style={{ width:10, height:10, borderRadius:"50%", background:h.color, marginTop:4, flexShrink:0 }} />
@@ -619,7 +593,8 @@ function LaunchStep({ product, selected, approval, onReset }) {
   );
 }
 
-function LaunchSimulator() {
+// ─── 메인 App ─────────────────────────────────────────────────
+function App() {
   const [step,     setStep]     = useState("configure");
   const [product,  setProduct]  = useState({ name:"", basePrice:0, description:"", target:"all", contract:"monthly" });
   const [selected, setSelected] = useState(new Set());
@@ -639,8 +614,52 @@ function LaunchSimulator() {
   };
 
   return (
-    <div style={{ minHeight:"calc(100vh - 52px)", background:"#f1f5f9", padding:"24px 16px" }}>
+    <div style={{ minHeight:"100vh", background:"#f1f5f9", padding:"24px 16px" }}>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
+
+        {/* ── 상단 네비게이션 바 ── */}
+        <div style={{
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          background:"#fff", border:"1px solid #e2e8f0", borderRadius:12,
+          padding:"10px 18px", marginBottom:20,
+          boxShadow:"0 1px 3px rgba(0,0,0,0.06)",
+        }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:20 }}>📱</span>
+            <span style={{ fontWeight:700, fontSize:14, color:"#1e293b" }}>상품 출시 시뮬레이터</span>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <a
+              href="lifecycle-simulator.html"
+              style={{
+                display:"inline-flex", alignItems:"center", gap:6,
+                padding:"7px 14px", borderRadius:8,
+                background:"#0f172a", color:"#e2e8f0",
+                textDecoration:"none", fontSize:13, fontWeight:600,
+                border:"1px solid #334155", transition:"all 0.2s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background="#1e293b"; e.currentTarget.style.borderColor="#14b8a6"; }}
+              onMouseLeave={e => { e.currentTarget.style.background="#0f172a"; e.currentTarget.style.borderColor="#334155"; }}
+            >
+              <span style={{ fontSize:15 }}>📡</span> 라이프사이클 시뮬레이터
+            </a>
+            <a
+              href="product-launch-db-schema.html"
+              style={{
+                display:"inline-flex", alignItems:"center", gap:6,
+                padding:"7px 14px", borderRadius:8,
+                background:"#0f172a", color:"#e2e8f0",
+                textDecoration:"none", fontSize:13, fontWeight:600,
+                border:"1px solid #334155", transition:"all 0.2s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background="#1e293b"; e.currentTarget.style.borderColor="#60a5fa"; }}
+              onMouseLeave={e => { e.currentTarget.style.background="#0f172a"; e.currentTarget.style.borderColor="#334155"; }}
+            >
+              <span style={{ fontSize:15 }}>🗄</span> DB 구조도 보기
+            </a>
+          </div>
+        </div>
+
         <div style={{ marginBottom:24 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
             <span style={{ fontSize:28 }}>📱</span>
@@ -672,470 +691,6 @@ function LaunchSimulator() {
           <LaunchStep product={product} selected={selected} approval={approval} onReset={handleReset} />
         )}
       </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════
-// 2. 라이프사이클 시뮬레이터
-// ══════════════════════════════════════════════════════════════
-const LC_PLANS = [
-  { id:"lte_lite",    name:"LTE 라이트",   badge:"LTE", price:22000, data:"10GB",   desc:"기본 데이터 제공, 소진 후 1Mbps" },
-  { id:"5g_basic",    name:"5G 베이직",    badge:"5G",  price:45000, data:"50GB",   desc:"5G 기본 속도, 소진 후 5Mbps" },
-  { id:"5g_standard", name:"5G 스탠다드",  badge:"5G",  price:65000, data:"200GB",  desc:"5G 고속, 부가서비스 포함 가능" },
-  { id:"5g_premium",  name:"5G 프리미엄",  badge:"5G+", price:89000, data:"무제한", desc:"완전 무제한, 해외 로밍 포함" },
-];
-const LC_ADDONS = [
-  { id:"netflix",  name:"넷플릭스",         icon:"🎬", price:13900 },
-  { id:"roaming",  name:"해외 로밍 패키지", icon:"✈️", price:9900  },
-  { id:"family",   name:"가족 결합 (3회선)", icon:"👨‍👩‍👧", price:-5000 },
-  { id:"security", name:"모바일 보안",       icon:"🔒", price:3300  },
-  { id:"cloud",    name:"클라우드 1TB",      icon:"☁️", price:8800  },
-];
-const LC_CONTRACT = [
-  { id:"month", label:"약정 없음", discount:0    },
-  { id:"12m",   label:"12개월",   discount:0.05 },
-  { id:"24m",   label:"24개월",   discount:0.10 },
-];
-const LC_STATES = { idle:"idle", ordering:"ordering", verifying:"verifying", activating:"activating", active:"active", suspended:"suspended", terminating:"terminating", terminated:"terminated" };
-const ACTIV_STEPS = ["서비스 신청 처리","전화번호 배정","SIM 설정","네트워크 연결","서비스 활성화"];
-
-function LifecycleSimulator() {
-  const [state, setState]           = useState(LC_STATES.idle);
-  const [plan, setPlan]             = useState(null);
-  const [addons, setAddons]         = useState({});
-  const [contract, setContract]     = useState("month");
-  const [custName, setCustName]     = useState("");
-  const [custPhone, setCustPhone]   = useState("");
-  const [custId, setCustId]         = useState("");
-  const [idChecked, setIdChecked]   = useState(false);
-  const [creditOk, setCreditOk]     = useState(false);
-  const [activStep, setActivStep]   = useState(0);
-  const [msisdn, setMsisdn]         = useState("");
-  const [simNo, setSimNo]           = useState("");
-  const [activatedAt, setActivatedAt] = useState(null);
-  const [changePlan, setChangePlan] = useState(false);
-  const [newPlan, setNewPlan]       = useState(null);
-  const timerRef = useRef(null);
-
-  const selPlan     = LC_PLANS.find(p => p.id === plan);
-  const contractOpt = LC_CONTRACT.find(c => c.id === contract);
-  const addonList   = LC_ADDONS.filter(a => addons[a.id]);
-  const basePrice   = selPlan ? Math.round(selPlan.price * (1 - (contractOpt?.discount || 0))) : 0;
-  const addonPrice  = addonList.reduce((s, a) => s + a.price, 0);
-  const totalPrice  = basePrice + addonPrice;
-
-  useEffect(() => {
-    if (state === LC_STATES.activating) {
-      setActivStep(0);
-      let step = 0;
-      function nextStep() {
-        step++;
-        if (step < ACTIV_STEPS.length) {
-          timerRef.current = setTimeout(() => { setActivStep(step); nextStep(); }, 900);
-        } else {
-          timerRef.current = setTimeout(() => {
-            setMsisdn("010-" + Math.floor(1000 + Math.random() * 9000) + "-" + Math.floor(1000 + Math.random() * 9000));
-            setSimNo("8982" + Math.floor(100000000000 + Math.random() * 900000000000));
-            setActivatedAt(new Date().toLocaleString("ko-KR"));
-            setState(LC_STATES.active);
-          }, 700);
-        }
-      }
-      timerRef.current = setTimeout(nextStep, 900);
-    }
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [state]);
-
-  useEffect(() => {
-    if (state === LC_STATES.terminating) {
-      timerRef.current = setTimeout(() => setState(LC_STATES.terminated), 2000);
-    }
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [state]);
-
-  function reset() {
-    setState(LC_STATES.idle); setPlan(null); setAddons({}); setContract("month");
-    setCustName(""); setCustPhone(""); setCustId(""); setIdChecked(false); setCreditOk(false);
-    setActivStep(0); setMsisdn(""); setSimNo(""); setActivatedAt(null);
-    setChangePlan(false); setNewPlan(null);
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }
-
-  const STATE_BADGE = {
-    idle:        { label:"대기",          color:"#64748b", bg:"#f1f5f9" },
-    ordering:    { label:"신청 중",       color:"#d97706", bg:"#fef3c7" },
-    verifying:   { label:"본인인증",      color:"#7c3aed", bg:"#ede9fe" },
-    activating:  { label:"개통 처리 중", color:"#2563eb", bg:"#dbeafe" },
-    active:      { label:"정상 이용",    color:"#15803d", bg:"#dcfce7" },
-    suspended:   { label:"일시정지",     color:"#b45309", bg:"#fef3c7" },
-    terminating: { label:"해지 처리 중", color:"#dc2626", bg:"#fee2e2" },
-    terminated:  { label:"해지 완료",    color:"#64748b", bg:"#f1f5f9" },
-  };
-  const sb = STATE_BADGE[state];
-
-  const LC_CARD = { background:"#fff", borderRadius:14, padding:20, boxShadow:"0 1px 4px rgba(0,0,0,0.08)", border:"1px solid #f1f5f9" };
-
-  function CustomerCard() {
-    return (
-      <div style={{ width:220, flexShrink:0 }}>
-        <div style={{ ...LC_CARD, marginBottom:10 }}>
-          <p style={{ ...sectionTitle, fontSize:13 }}>👤 고객 정보</p>
-          <div style={{ fontSize:12, color:"#475569", lineHeight:1.9 }}>
-            <div><span style={{ color:"#94a3b8" }}>이름</span>&nbsp;<strong>{custName}</strong></div>
-            <div><span style={{ color:"#94a3b8" }}>전화번호</span>&nbsp;<strong>{msisdn}</strong></div>
-            <div><span style={{ color:"#94a3b8" }}>SIM</span>&nbsp;<strong style={{ fontSize:10 }}>{simNo}</strong></div>
-            <div><span style={{ color:"#94a3b8" }}>개통일</span>&nbsp;<strong style={{ fontSize:10 }}>{activatedAt}</strong></div>
-          </div>
-        </div>
-        <div style={{ ...LC_CARD, marginBottom:10 }}>
-          <p style={{ ...sectionTitle, fontSize:13 }}>📋 현재 요금제</p>
-          <div style={{ fontWeight:700, color:"#1e293b", fontSize:13, marginBottom:3 }}>{selPlan?.name}</div>
-          <div style={{ fontSize:11, color:"#64748b", marginBottom:8 }}>{selPlan?.data} | {selPlan?.badge}</div>
-          <div style={{ fontSize:13, fontWeight:700, color:"#2563eb" }}>{totalPrice.toLocaleString()}원/월</div>
-          {addonList.length > 0 && (
-            <div style={{ marginTop:8, display:"flex", flexWrap:"wrap", gap:4 }}>
-              {addonList.map(a => <span key={a.id} style={{ background:"#f0fdf4", color:"#16a34a", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:600 }}>{a.icon} {a.name}</span>)}
-            </div>
-          )}
-        </div>
-        <div style={LC_CARD}>
-          <p style={{ ...sectionTitle, fontSize:13 }}>📶 상태</p>
-          <span style={{ background:sb.bg, color:sb.color, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:700 }}>● {sb.label}</span>
-          {contract !== "month" && <div style={{ fontSize:11, color:"#64748b", marginTop:8 }}>약정: {contractOpt?.label}</div>}
-        </div>
-      </div>
-    );
-  }
-
-  // 상태별 패널
-  function IdlePanel() {
-    return (
-      <div style={{ maxWidth:760, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:44, marginBottom:8 }}>📱</div>
-          <h2 style={{ fontSize:20, fontWeight:800, color:"#1e293b", marginBottom:4 }}>요금제 가입</h2>
-          <p style={{ color:"#64748b", fontSize:13 }}>요금제를 선택하고 서비스를 신청하세요.</p>
-        </div>
-        <div style={{ ...LC_CARD, marginBottom:14 }}>
-          <h3 style={sectionTitle}>요금제 선택</h3>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))", gap:10 }}>
-            {LC_PLANS.map(p => {
-              const sel = plan === p.id;
-              return (
-                <div key={p.id} onClick={() => setPlan(p.id)} style={{ padding:14, borderRadius:10, border:`2px solid ${sel?"#2563eb":"#e2e8f0"}`, background:sel?"#eff6ff":"#fafafa", cursor:"pointer", transition:"all .15s" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                    <span style={{ background:"#dbeafe", color:"#2563eb", borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{p.badge}</span>
-                    {sel && <span style={{ fontSize:11, color:"#2563eb", fontWeight:700 }}>✓</span>}
-                  </div>
-                  <div style={{ fontWeight:700, fontSize:13, color:"#1e293b", marginBottom:2 }}>{p.name}</div>
-                  <div style={{ fontSize:11, color:"#64748b", marginBottom:8 }}>{p.data}</div>
-                  <div style={{ fontSize:15, fontWeight:800, color:"#2563eb" }}>{p.price.toLocaleString()}원<span style={{ fontSize:10, fontWeight:400, color:"#94a3b8" }}>/월</span></div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {plan && <>
-          <div style={{ ...LC_CARD, marginBottom:14 }}>
-            <h3 style={sectionTitle}>부가서비스</h3>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:8 }}>
-              {LC_ADDONS.map(a => {
-                const sel = !!addons[a.id];
-                return (
-                  <label key={a.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", borderRadius:8, border:`1.5px solid ${sel?"#2563eb":"#e2e8f0"}`, background:sel?"#eff6ff":"#fafafa", cursor:"pointer" }}>
-                    <input type="checkbox" checked={sel} onChange={e => setAddons(p => ({ ...p, [a.id]: e.target.checked }))} />
-                    <span style={{ fontSize:14 }}>{a.icon}</span>
-                    <div>
-                      <div style={{ fontSize:12, fontWeight:600, color:"#1e293b" }}>{a.name}</div>
-                      <div style={{ fontSize:11, color:a.price < 0 ? "#16a34a" : "#2563eb", fontWeight:700 }}>{a.price < 0 ? "-" : "+"}{Math.abs(a.price).toLocaleString()}원</div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div style={{ ...LC_CARD, marginBottom:14 }}>
-            <h3 style={sectionTitle}>약정 선택</h3>
-            <div style={{ display:"flex", gap:10 }}>
-              {LC_CONTRACT.map(c => (
-                <label key={c.id} style={{ flex:1, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${contract===c.id?"#2563eb":"#e2e8f0"}`, background:contract===c.id?"#eff6ff":"#fafafa", cursor:"pointer", display:"flex", flexDirection:"column", gap:4 }}>
-                  <input type="radio" name="lc_contract" value={c.id} checked={contract===c.id} onChange={() => setContract(c.id)} style={{ display:"none" }} />
-                  <span style={{ fontWeight:700, fontSize:13, color:"#1e293b" }}>{c.label}</span>
-                  {c.discount > 0 && <span style={{ fontSize:11, color:"#16a34a", fontWeight:600 }}>월 {(c.discount*100).toFixed(0)}% 할인</span>}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ ...LC_CARD, marginBottom:14 }}>
-            <h3 style={sectionTitle}>예상 월 요금</h3>
-            <div style={{ fontSize:26, fontWeight:800, color:"#2563eb" }}>{totalPrice.toLocaleString()}<span style={{ fontSize:14, color:"#94a3b8", fontWeight:400 }}>원/월</span></div>
-            {contractOpt?.discount > 0 && <div style={{ fontSize:12, color:"#16a34a", marginTop:4 }}>약정 할인 {(contractOpt.discount*100).toFixed(0)}% 적용됨</div>}
-          </div>
-
-          <div style={{ textAlign:"right" }}>
-            <button style={btnPrimary} onClick={() => setState(LC_STATES.ordering)}>신청하기 →</button>
-          </div>
-        </>}
-      </div>
-    );
-  }
-
-  function OrderingPanel() {
-    return (
-      <div style={{ maxWidth:520, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <div style={{ ...LC_CARD, marginBottom:14 }}>
-          <h3 style={sectionTitle}>고객 정보 입력</h3>
-          <div style={{ display:"grid", gap:12 }}>
-            <div><label style={labelStyle}>이름</label><input style={inputStyle} value={custName} onChange={e => setCustName(e.target.value)} placeholder="홍길동" /></div>
-            <div><label style={labelStyle}>연락처</label><input style={inputStyle} value={custPhone} onChange={e => setCustPhone(e.target.value)} placeholder="010-0000-0000" /></div>
-            <div><label style={labelStyle}>주민등록번호 앞 7자리</label><input style={inputStyle} value={custId} onChange={e => setCustId(e.target.value)} placeholder="YYMMDD-X" maxLength={8} /></div>
-          </div>
-        </div>
-        <div style={{ ...LC_CARD, marginBottom:14, background:"#f8fafc" }}>
-          <p style={{ fontSize:13, color:"#64748b", marginBottom:4 }}>선택 요금제</p>
-          <p style={{ fontWeight:700, color:"#1e293b" }}>{selPlan?.name} — {totalPrice.toLocaleString()}원/월</p>
-        </div>
-        <div style={{ display:"flex", gap:10 }}>
-          <button style={btnSecondary} onClick={() => setState(LC_STATES.idle)}>← 뒤로</button>
-          <button style={{ ...btnPrimary, flex:1 }} disabled={!custName || !custPhone || custId.length < 7} onClick={() => setState(LC_STATES.verifying)}>
-            본인인증 →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  function VerifyingPanel() {
-    return (
-      <div style={{ maxWidth:460, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <div style={LC_CARD}>
-          <div style={{ textAlign:"center", marginBottom:20 }}>
-            <div style={{ fontSize:40, marginBottom:8 }}>🔐</div>
-            <h3 style={{ ...sectionTitle, textAlign:"center" }}>본인인증</h3>
-            <p style={{ fontSize:13, color:"#64748b" }}>개인정보를 확인하고 인증을 완료해주세요.</p>
-          </div>
-          <div style={{ background:"#f8fafc", borderRadius:10, padding:14, marginBottom:16 }}>
-            <div style={{ fontSize:13, color:"#475569", lineHeight:2 }}>
-              <div><span style={{ color:"#94a3b8" }}>이름</span>: <strong>{custName}</strong></div>
-              <div><span style={{ color:"#94a3b8" }}>연락처</span>: <strong>{custPhone}</strong></div>
-              <div><span style={{ color:"#94a3b8" }}>생년월일</span>: <strong>{custId.slice(0,6)}</strong></div>
-            </div>
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
-            <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
-              <input type="checkbox" checked={idChecked} onChange={e => setIdChecked(e.target.checked)} />
-              <span style={{ fontSize:13 }}>신분증 확인 완료</span>
-            </label>
-            <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
-              <input type="checkbox" checked={creditOk} onChange={e => setCreditOk(e.target.checked)} />
-              <span style={{ fontSize:13 }}>신용조회 동의 및 완료</span>
-            </label>
-          </div>
-          <div style={{ display:"flex", gap:10 }}>
-            <button style={btnSecondary} onClick={() => setState(LC_STATES.ordering)}>← 뒤로</button>
-            <button style={{ ...btnPrimary, flex:1 }} disabled={!idChecked || !creditOk} onClick={() => setState(LC_STATES.activating)}>
-              개통 진행 →
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function ActivatingPanel() {
-    return (
-      <div style={{ maxWidth:460, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <div style={{ ...LC_CARD, textAlign:"center" }}>
-          <div style={{ fontSize:40, marginBottom:16, animation:"spin 2s linear infinite", display:"inline-block" }}>⚙️</div>
-          <h3 style={sectionTitle}>개통 처리 중...</h3>
-          <p style={{ fontSize:13, color:"#64748b", marginBottom:24 }}>잠시만 기다려주세요.</p>
-          <div style={{ display:"grid", gap:10, textAlign:"left" }}>
-            {ACTIV_STEPS.map((s, i) => {
-              const done   = i < activStep;
-              const active = i === activStep;
-              return (
-                <div key={s} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderRadius:8, background:done?"#f0fdf4":active?"#eff6ff":"#f8fafc" }}>
-                  <span style={{ fontSize:16 }}>{done ? "✅" : active ? "⏳" : "⬜"}</span>
-                  <span style={{ fontSize:13, fontWeight:600, color:done?"#16a34a":active?"#2563eb":"#94a3b8" }}>{s}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function ActivePanel() {
-    return (
-      <div style={{ display:"flex", gap:16, padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <CustomerCard />
-        <div style={{ flex:1, display:"flex", flexDirection:"column", gap:12 }}>
-          {changePlan ? (
-            <div style={LC_CARD}>
-              <h3 style={sectionTitle}>📋 요금제 변경</h3>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
-                {LC_PLANS.filter(p => p.id !== plan).map(p => (
-                  <div key={p.id} onClick={() => setNewPlan(p.id)} style={{ padding:12, borderRadius:8, border:`2px solid ${newPlan===p.id?"#2563eb":"#e2e8f0"}`, background:newPlan===p.id?"#eff6ff":"#fafafa", cursor:"pointer" }}>
-                    <span style={{ background:"#dbeafe", color:"#2563eb", borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{p.badge}</span>
-                    <div style={{ fontWeight:700, fontSize:12, margin:"4px 0 2px" }}>{p.name}</div>
-                    <div style={{ fontSize:12, fontWeight:700, color:"#2563eb" }}>{p.price.toLocaleString()}원/월</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                <button style={btnSecondary} onClick={() => { setChangePlan(false); setNewPlan(null); }}>취소</button>
-                <button style={btnPrimary} disabled={!newPlan} onClick={() => { setPlan(newPlan); setChangePlan(false); setNewPlan(null); }}>변경 확인</button>
-              </div>
-            </div>
-          ) : (
-            <div style={LC_CARD}>
-              <h3 style={sectionTitle}>🛠 서비스 관리</h3>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                {[
-                  { icon:"📋", title:"요금제 변경",  sub:"다른 요금제로 전환",   style:btnSecondary, onClick:() => setChangePlan(true) },
-                  { icon:"⏸", title:"일시정지",     sub:"서비스 일시 중단",      style:btnSecondary, onClick:() => setState(LC_STATES.suspended) },
-                  { icon:"❌", title:"해지",          sub:"서비스 완전 종료",      style:btnDanger,    onClick:() => setState(LC_STATES.terminating) },
-                ].map(b => (
-                  <button key={b.title} onClick={b.onClick} style={{ ...b.style, display:"flex", flexDirection:"column", alignItems:"flex-start", gap:4, height:"auto", padding:14, textAlign:"left" }}>
-                    <span style={{ fontSize:18 }}>{b.icon}</span>
-                    <span style={{ fontSize:13, fontWeight:700 }}>{b.title}</span>
-                    <span style={{ fontSize:11, opacity:.7 }}>{b.sub}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div style={LC_CARD}>
-            <h3 style={{ ...sectionTitle, fontSize:13 }}>📊 이용 현황 (시뮬레이션)</h3>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-              {[["데이터 사용", selPlan?.data==="무제한"?"무제한":Math.floor(Math.random()*50+10)+"GB"], ["음성통화","120분"], ["남은 데이터",selPlan?.data==="무제한"?"무제한":"잔여 일부"], ["청구 예정",totalPrice.toLocaleString()+"원"]].map(([k, v]) => (
-                <div key={k} style={{ background:"#f8fafc", borderRadius:8, padding:"10px 12px" }}>
-                  <div style={{ fontSize:11, color:"#94a3b8" }}>{k}</div>
-                  <div style={{ fontWeight:700, fontSize:13, color:"#1e293b" }}>{v}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function SuspendedPanel() {
-    return (
-      <div style={{ display:"flex", gap:16, padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <CustomerCard />
-        <div style={{ flex:1 }}>
-          <div style={{ ...LC_CARD, textAlign:"center", padding:32 }}>
-            <div style={{ fontSize:48, marginBottom:8 }}>⏸</div>
-            <h3 style={sectionTitle}>서비스 일시정지</h3>
-            <p style={{ fontSize:13, color:"#64748b", marginBottom:20 }}>현재 데이터/음성 이용이 중단된 상태입니다.</p>
-            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              <button style={btnPrimary} onClick={() => setState(LC_STATES.active)}>▶ 서비스 재개</button>
-              <button style={btnDanger} onClick={() => setState(LC_STATES.terminating)}>해지 처리</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function TerminatingPanel() {
-    return (
-      <div style={{ maxWidth:460, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease", textAlign:"center" }}>
-        <div style={LC_CARD}>
-          <div style={{ fontSize:40, marginBottom:12, animation:"pulse 1.5s infinite", display:"inline-block" }}>🔄</div>
-          <h3 style={sectionTitle}>해지 처리 중...</h3>
-          <p style={{ fontSize:13, color:"#64748b" }}>서비스를 안전하게 종료하고 있습니다.</p>
-        </div>
-      </div>
-    );
-  }
-
-  function TerminatedPanel() {
-    return (
-      <div style={{ maxWidth:460, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease", textAlign:"center" }}>
-        <div style={LC_CARD}>
-          <div style={{ fontSize:64, marginBottom:12 }}>📴</div>
-          <h3 style={sectionTitle}>해지 완료</h3>
-          <p style={{ fontSize:13, color:"#64748b", marginBottom:24 }}>{custName}님의 서비스가 정상적으로 해지되었습니다.</p>
-          <div style={{ background:"#f8fafc", borderRadius:10, padding:14, marginBottom:20, textAlign:"left" }}>
-            <div style={{ fontSize:12, color:"#475569", lineHeight:2 }}>
-              <div><span style={{ color:"#94a3b8" }}>고객명</span>: <strong>{custName}</strong></div>
-              <div><span style={{ color:"#94a3b8" }}>전화번호</span>: <strong>{msisdn}</strong></div>
-              <div><span style={{ color:"#94a3b8" }}>이용 요금제</span>: <strong>{selPlan?.name}</strong></div>
-              <div><span style={{ color:"#94a3b8" }}>해지 일시</span>: <strong>{new Date().toLocaleString("ko-KR")}</strong></div>
-            </div>
-          </div>
-          <button style={btnPrimary} onClick={reset}>새 가입 신청</button>
-        </div>
-      </div>
-    );
-  }
-
-  const STATUS_FLOW = [
-    { key:"idle",       label:"가입 신청" },
-    { key:"ordering",   label:"정보 입력" },
-    { key:"verifying",  label:"본인인증" },
-    { key:"activating", label:"개통 처리" },
-    { key:"active",     label:"이용 중"  },
-  ];
-  const activeIdx = STATUS_FLOW.findIndex(s => s.key === state);
-
-  return (
-    <div style={{ minHeight:"calc(100vh - 52px)", background:"#f1f5f9" }}>
-      {!["terminating","terminated"].includes(state) && (
-        <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"10px 24px" }}>
-          <div style={{ maxWidth:900, margin:"0 auto", display:"flex", alignItems:"center" }}>
-            {STATUS_FLOW.map((s, i) => {
-              const done   = i < activeIdx;
-              const active = s.key === state;
-              const reach  = i <= activeIdx;
-              return (
-                <React.Fragment key={s.key}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <div style={{ width:24, height:24, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, background:done?"#2563eb":active?"#eff6ff":"#f1f5f9", color:done?"#fff":active?"#2563eb":"#94a3b8", border:`2px solid ${reach?"#2563eb":"#e2e8f0"}` }}>
-                      {done ? "✓" : i+1}
-                    </div>
-                    <span style={{ fontSize:12, fontWeight:600, color:active?"#2563eb":done?"#475569":"#94a3b8", whiteSpace:"nowrap" }}>{s.label}</span>
-                  </div>
-                  {i < STATUS_FLOW.length - 1 && <div style={{ flex:1, height:2, margin:"0 8px", background:done?"#2563eb":"#e2e8f0", minWidth:16 }} />}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div style={{ maxWidth:900, margin:"0 auto", padding:"0 16px" }}>
-        {state === LC_STATES.idle        && <IdlePanel />}
-        {state === LC_STATES.ordering    && <OrderingPanel />}
-        {state === LC_STATES.verifying   && <VerifyingPanel />}
-        {state === LC_STATES.activating  && <ActivatingPanel />}
-        {state === LC_STATES.active      && <ActivePanel />}
-        {state === LC_STATES.suspended   && <SuspendedPanel />}
-        {state === LC_STATES.terminating && <TerminatingPanel />}
-        {state === LC_STATES.terminated  && <TerminatedPanel />}
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════
-// Root App
-// ══════════════════════════════════════════════════════════════
-function App() {
-  const [page, setPage] = useState("launch");
-  return (
-    <div style={{ minHeight:"100vh", background:"#f1f5f9" }}>
-      <TopNav page={page} setPage={setPage} />
-      {page === "launch"    && <LaunchSimulator />}
-      {page === "lifecycle" && <LifecycleSimulator />}
     </div>
   );
 }

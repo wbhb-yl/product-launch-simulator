@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>📦 상품 출시 시뮬레이터 — DB 구조도</title>
+<title>🗄 통신사 시뮬레이터 — DB 구조도</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
@@ -135,7 +135,15 @@
   .summary-card .num { font-size: 28px; font-weight: 800; color: #60a5fa; }
   .summary-card .lbl { font-size: 11px; color: #64748b; margin-top: 2px; }
 
+
+  .sec-btn { padding:8px 18px; border-radius:8px 8px 0 0; cursor:pointer; font-size:13px; font-weight:600;
+             color:#64748b; background:transparent; border:1px solid transparent; border-bottom:none; transition:all .2s; }
+  .sec-btn.active-sec { background:#1e293b; color:#60a5fa; border-color:#334155; }
+  .sec-btn:hover:not(.active-sec) { color:#94a3b8; }
+  .sec-content { display:block; }
+  .sec-content.hidden { display:none; }
   .hidden { display: none; }
+  .rel-11 { background:#0e7490; color:#fff; }
 </style>
 </head>
 <body>
@@ -145,21 +153,36 @@
     <span style="font-size:18px;">🗄</span>
     <span style="font-weight:700;font-size:14px;color:#e2e8f0;">DB 구조도</span>
   </div>
-  <a href="index.html"
-     style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
-            background:#1e293b;color:#e2e8f0;text-decoration:none;font-size:13px;font-weight:600;
-            border:1px solid #334155;transition:all 0.2s;"
-     onmouseover="this.style.borderColor='#60a5fa';this.style.background='#263348'"
-     onmouseout="this.style.borderColor='#334155';this.style.background='#1e293b'">
-    ← 시뮬레이터로 돌아가기
-  </a>
+  <div style="display:flex;gap:8px;">
+    <a href="index.html"
+       style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
+              background:#1e293b;color:#e2e8f0;text-decoration:none;font-size:13px;font-weight:600;
+              border:1px solid #334155;transition:all 0.2s;"
+       onmouseover="this.style.borderColor='#60a5fa';this.style.background='#263348'"
+       onmouseout="this.style.borderColor='#334155';this.style.background='#1e293b'">
+      ← 상품 출시 시뮬레이터
+    </a>
+    <a href="lifecycle-simulator.html"
+       style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
+              background:#1e293b;color:#e2e8f0;text-decoration:none;font-size:13px;font-weight:600;
+              border:1px solid #334155;transition:all 0.2s;"
+       onmouseover="this.style.borderColor='#14b8a6';this.style.background='#263348'"
+       onmouseout="this.style.borderColor='#334155';this.style.background='#1e293b'">
+      📡 라이프사이클 시뮬레이터
+    </a>
+  </div>
 </div>
 
 <div class="header">
-  <h1>📦 상품 출시 시뮬레이터 — DB 구조도</h1>
-  <p>5G 요금제 상품 구성·검토·승인·출시 워크플로우를 지원하는 데이터베이스 스키마</p>
+  <h1>🗄 통신사 시뮬레이터 — DB 구조도</h1>
+  <p>상품 출시 워크플로우 / 라이프사이클 (가입·개통·변경·정지·해지) 데이터베이스 스키마</p>
 </div>
 
+
+<div style="display:flex;gap:6px;padding:12px 40px 0;background:#0f172a;">
+  <div class="sec-btn active-sec" data-sec="launch" onclick="showSection('launch')">📦 상품 출시</div>
+  <div class="sec-btn" data-sec="lifecycle" onclick="showSection('lifecycle')">🔄 라이프사이클</div>
+</div>
 <div class="tabs">
   <div class="tab active" onclick="showTab('erd')">🗺 ERD 다이어그램</div>
   <div class="tab" onclick="showTab('schema')">📋 테이블 상세</div>
@@ -171,6 +194,7 @@
 
 <!-- ════════════════════════════════ ERD TAB ════════════════════════════════ -->
 <div id="tab-erd">
+<div class="sec-content" data-sec="launch">
   <div class="summary">
     <div class="summary-card"><div class="num">8</div><div class="lbl">테이블</div></div>
     <div class="summary-card"><div class="num">12</div><div class="lbl">관계 (FK)</div></div>
@@ -335,10 +359,172 @@
 
     </div><!-- /erd-canvas -->
   </div><!-- /erd-wrap -->
-</div>
+</div><!-- /sec-launch-erd -->
+<div class="sec-content hidden" data-sec="lifecycle">
+  <div class="summary">
+    <div class="summary-card"><div class="num">9</div><div class="lbl">테이블</div></div>
+    <div class="summary-card"><div class="num">8</div><div class="lbl">관계 (FK)</div></div>
+    <div class="summary-card"><div class="num">63</div><div class="lbl">총 컬럼 수</div></div>
+    <div class="summary-card"><div class="num">7</div><div class="lbl">라이프사이클 상태</div></div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span style="color:#fbbf24;font-size:14px;">🔑</span> Primary Key</div>
+    <div class="legend-item"><span style="color:#60a5fa;font-size:14px;">🔗</span> Foreign Key</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-left:8px;">
+      <div class="legend-item"><span style="background:#eab308;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 고객</div>
+      <div class="legend-item"><span style="background:#3b82f6;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 요금제/부가서비스</div>
+      <div class="legend-item"><span style="background:#ef4444;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 가입 계약 (핵심)</div>
+      <div class="legend-item"><span style="background:#14b8a6;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 연결 테이블</div>
+      <div class="legend-item"><span style="background:#f97316;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 이벤트 로그</div>
+      <div class="legend-item"><span style="background:#06b6d4;width:10px;height:10px;border-radius:50%;display:inline-block;"></span> 자원 풀</div>
+    </div>
+  </div>
+
+  <div class="erd-wrap">
+    <div class="erd-canvas" style="width:1020px;height:800px;">
+      <svg class="erd-lines" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="lc-arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#334155"/></marker>
+          <marker id="lc-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/></marker>
+          <marker id="lc-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#ef4444"/></marker>
+          <marker id="lc-teal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#14b8a6"/></marker>
+          <marker id="lc-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f97316"/></marker>
+          <marker id="lc-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#06b6d4"/></marker>
+        </defs>
+        <!-- contract_types → subscriptions -->
+        <path d="M 205 113 C 235 113 235 390 250 390" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4,3" fill="none" marker-end="url(#lc-arr)"/>
+        <!-- customers → subscriptions -->
+        <line x1="347" y1="248" x2="370" y2="250" stroke="#eab308" stroke-width="1.5" marker-end="url(#lc-arr)"/>
+        <!-- plans → subscriptions -->
+        <path d="M 582 260 C 582 255 450 255 450 250" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#lc-blue)"/>
+        <!-- addons → subscription_addons -->
+        <path d="M 825 210 C 825 275 670 275 670 340" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#lc-arr)"/>
+        <!-- subscriptions → subscription_addons -->
+        <line x1="490" y1="400" x2="555" y2="420" stroke="#14b8a6" stroke-width="1.5" marker-end="url(#lc-teal)"/>
+        <!-- subscriptions → lifecycle_events -->
+        <path d="M 270 530 C 200 560 160 570 160 590" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#lc-orange)"/>
+        <!-- subscriptions → msisdn_pool -->
+        <line x1="370" y1="530" x2="395" y2="590" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#lc-cyan)"/>
+        <!-- subscriptions → sim_inventory -->
+        <path d="M 450 530 C 520 560 620 570 640 590" stroke="#06b6d4" stroke-width="1.5" fill="none" marker-end="url(#lc-cyan)"/>
+      </svg>
+
+      <!-- ① contract_types (ref) -->
+      <div class="tbl-box c-green" style="left:20px;top:30px;width:185px;">
+        <div class="tbl-head"><div class="dot"></div>contract_types</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">code</span><span class="col-type">VARCHAR(20)</span></div>
+        <div class="tbl-row"><span class="col-name">label</span><span class="col-type">VARCHAR(30)</span></div>
+        <div class="tbl-row"><span class="col-name">discount_rate</span><span class="col-type">DECIMAL(4,2)</span></div>
+        <div class="tbl-row"><span class="col-name">months</span><span class="col-type">INT</span></div>
+      </div>
+
+      <!-- ② customers -->
+      <div class="tbl-box c-yellow" style="left:250px;top:30px;width:195px;">
+        <div class="tbl-head"><div class="dot"></div>customers</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(60)</span></div>
+        <div class="tbl-row"><span class="col-name">phone</span><span class="col-type">VARCHAR(20)</span></div>
+        <div class="tbl-row"><span class="col-name">id_number_prefix</span><span class="col-type">VARCHAR(8)</span></div>
+        <div class="tbl-row"><span class="col-name">credit_grade</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">identity_verified</span><span class="col-type">BOOLEAN</span></div>
+        <div class="tbl-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ③ plans -->
+      <div class="tbl-box c-blue" style="left:490px;top:30px;width:190px;">
+        <div class="tbl-head"><div class="dot"></div>plans</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">code</span><span class="col-type">VARCHAR(30)</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(60)</span></div>
+        <div class="tbl-row"><span class="col-name">badge</span><span class="col-type">VARCHAR(10)</span></div>
+        <div class="tbl-row"><span class="col-name">base_price</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">data_allowance</span><span class="col-type">VARCHAR(20)</span></div>
+        <div class="tbl-row"><span class="col-name">is_active</span><span class="col-type">BOOLEAN</span></div>
+        <div class="tbl-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ④ addons -->
+      <div class="tbl-box c-purple" style="left:730px;top:30px;width:190px;">
+        <div class="tbl-head"><div class="dot"></div>addons</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">code</span><span class="col-type">VARCHAR(30)</span></div>
+        <div class="tbl-row"><span class="col-name">name</span><span class="col-type">VARCHAR(60)</span></div>
+        <div class="tbl-row"><span class="col-name">icon</span><span class="col-type">VARCHAR(10)</span></div>
+        <div class="tbl-row"><span class="col-name">price</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">is_active</span><span class="col-type">BOOLEAN</span></div>
+      </div>
+
+      <!-- ⑤ subscriptions (core) -->
+      <div class="tbl-box" style="left:250px;top:250px;width:240px;border-color:#ef4444;">
+        <div class="tbl-head" style="background:#7f1d1d;border-color:#ef4444;"><div class="dot" style="background:#ef4444;"></div>subscriptions</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">customer_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">plan_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">contract_type_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">msisdn</span><span class="col-type">VARCHAR(15)</span></div>
+        <div class="tbl-row"><span class="col-name">sim_no</span><span class="col-type">VARCHAR(20)</span></div>
+        <div class="tbl-row"><span class="col-name">monthly_price</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">activated_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="tbl-row"><span class="col-name">suspended_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="tbl-row"><span class="col-name">terminated_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="tbl-row"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑥ subscription_addons (junction) -->
+      <div class="tbl-box c-teal" style="left:555px;top:340px;width:220px;">
+        <div class="tbl-head"><div class="dot"></div>subscription_addons</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">subscription_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">addon_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">price_snapshot</span><span class="col-type">INT</span></div>
+        <div class="tbl-row"><span class="col-name">added_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="tbl-row"><span class="col-name">removed_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑦ lifecycle_events -->
+      <div class="tbl-box c-orange" style="left:20px;top:590px;width:230px;">
+        <div class="tbl-head"><div class="dot"></div>lifecycle_events</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row fk"><span class="col-name">subscription_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">event_type</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">from_status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">to_status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row"><span class="col-name">reason</span><span class="col-type">VARCHAR(200)</span></div>
+        <div class="tbl-row"><span class="col-name">performed_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑧ msisdn_pool -->
+      <div class="tbl-box" style="left:295px;top:590px;width:210px;border-color:#06b6d4;">
+        <div class="tbl-head" style="background:#164e63;border-color:#06b6d4;"><div class="dot" style="background:#06b6d4;"></div>msisdn_pool</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">msisdn</span><span class="col-type">VARCHAR(15)</span></div>
+        <div class="tbl-row"><span class="col-name">status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row fk"><span class="col-name">subscription_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">assigned_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="tbl-row"><span class="col-name">released_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+      <!-- ⑨ sim_inventory -->
+      <div class="tbl-box" style="left:555px;top:590px;width:210px;border-color:#06b6d4;">
+        <div class="tbl-head" style="background:#164e63;border-color:#06b6d4;"><div class="dot" style="background:#06b6d4;"></div>sim_inventory</div>
+        <div class="tbl-row pk"><span class="col-name">id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">sim_no</span><span class="col-type">VARCHAR(20)</span></div>
+        <div class="tbl-row"><span class="col-name">status</span><span class="col-type">ENUM</span></div>
+        <div class="tbl-row fk"><span class="col-name">subscription_id</span><span class="col-type">BIGINT</span></div>
+        <div class="tbl-row"><span class="col-name">issued_at</span><span class="col-type">TIMESTAMP</span></div>
+        <div class="tbl-row"><span class="col-name">returned_at</span><span class="col-type">TIMESTAMP</span></div>
+      </div>
+
+    </div><!-- /erd-canvas -->
+  </div><!-- /erd-wrap -->
+</div><!-- /sec-lifecycle-erd -->
+</div><!-- /tab-erd -->
 
 <!-- ════════════════════════════════ SCHEMA TAB ════════════════════════════════ -->
 <div id="tab-schema" class="hidden">
+<div class="sec-content" data-sec="launch">
   <div class="schema-grid">
 
     <!-- users -->
@@ -514,10 +700,189 @@
     </div>
 
   </div>
-</div>
+</div><!-- /sec-launch-schema -->
+<div class="sec-content hidden" data-sec="lifecycle">
+  <div class="schema-grid">
+
+    <!-- customers -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #eab308;">
+        <span style="font-size:16px;">👤</span>
+        <h3>customers</h3>
+        <span>가입 고객</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span><span class="badge nn">NN</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(60)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">고객 이름</td></tr>
+        <tr><td class="col-name">phone</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">연락처</td></tr>
+        <tr><td class="col-name">id_number_prefix</td><td class="col-type">VARCHAR(8)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">주민번호 앞 7자리 (암호화)</td></tr>
+        <tr><td class="col-name">credit_grade</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge def">DEF:A</span></td><td class="col-desc">신용등급 A/B/C/D</td></tr>
+        <tr><td class="col-name">identity_verified</td><td class="col-type">BOOLEAN</td><td class="col-constraint"><span class="badge def">DEF:0</span></td><td class="col-desc">본인인증 완료 여부</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">등록일시</td></tr>
+      </table>
+    </div>
+
+    <!-- plans -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #3b82f6;">
+        <span style="font-size:16px;">📋</span>
+        <h3>plans</h3>
+        <span>요금제 카탈로그</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">code</td><td class="col-type">VARCHAR(30)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">lte_lite / 5g_basic / 5g_standard / 5g_premium</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(60)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">요금제 표시명</td></tr>
+        <tr><td class="col-name">badge</td><td class="col-type">VARCHAR(10)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">LTE / 5G / 5G+</td></tr>
+        <tr><td class="col-name">base_price</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">기본 월 요금 (원)</td></tr>
+        <tr><td class="col-name">data_allowance</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">데이터 제공량 (10GB / 무제한)</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="col-desc">요금제 설명</td></tr>
+        <tr><td class="col-name">is_active</td><td class="col-type">BOOLEAN</td><td class="col-constraint"><span class="badge def">DEF:1</span></td><td class="col-desc">판매 가능 여부</td></tr>
+      </table>
+    </div>
+
+    <!-- addons -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #8b5cf6;">
+        <span style="font-size:16px;">➕</span>
+        <h3>addons</h3>
+        <span>부가서비스 카탈로그</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">code</td><td class="col-type">VARCHAR(30)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">netflix / roaming / family …</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">VARCHAR(60)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">부가서비스명</td></tr>
+        <tr><td class="col-name">icon</td><td class="col-type">VARCHAR(10)</td><td></td><td class="col-desc">이모지 아이콘</td></tr>
+        <tr><td class="col-name">price</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">월 요금 (음수=할인)</td></tr>
+        <tr><td class="col-name">is_active</td><td class="col-type">BOOLEAN</td><td class="col-constraint"><span class="badge def">DEF:1</span></td><td class="col-desc">제공 가능 여부</td></tr>
+      </table>
+    </div>
+
+    <!-- contract_types -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #22c55e;">
+        <span style="font-size:16px;">📄</span>
+        <h3>contract_types</h3>
+        <span>약정 유형 (참조)</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">code</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">month / 12m / 24m</td></tr>
+        <tr><td class="col-name">label</td><td class="col-type">VARCHAR(30)</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">약정 없음 / 12개월 / 24개월</td></tr>
+        <tr><td class="col-name">discount_rate</td><td class="col-type">DECIMAL(4,2)</td><td class="col-constraint"><span class="badge def">DEF:0</span></td><td class="col-desc">할인율 (0.00 ~ 1.00)</td></tr>
+        <tr><td class="col-name">months</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge def">DEF:0</span></td><td class="col-desc">약정 기간 (0=무약정)</td></tr>
+      </table>
+    </div>
+
+    <!-- subscriptions -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #ef4444;">
+        <span style="font-size:16px;">📱</span>
+        <h3>subscriptions</h3>
+        <span>가입 계약 (핵심 엔티티)</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">customer_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ customers.id</td></tr>
+        <tr><td class="col-name">plan_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ plans.id (현재 요금제)</td></tr>
+        <tr><td class="col-name">contract_type_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ contract_types.id</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">ordering/verifying/activating/active/suspended/terminating/terminated</td></tr>
+        <tr><td class="col-name">msisdn</td><td class="col-type">VARCHAR(15)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">개통 전화번호 (개통 후 할당)</td></tr>
+        <tr><td class="col-name">sim_no</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge uq">UQ</span></td><td class="col-desc">SIM 카드 번호</td></tr>
+        <tr><td class="col-name">monthly_price</td><td class="col-type">INT</td><td></td><td class="col-desc">최종 월 요금 (약정·부가 적용 후)</td></tr>
+        <tr><td class="col-name">activated_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">개통 완료일시</td></tr>
+        <tr><td class="col-name">suspended_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">일시정지 시작일시</td></tr>
+        <tr><td class="col-name">terminated_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">해지 완료일시</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">신청일시</td></tr>
+      </table>
+    </div>
+
+    <!-- subscription_addons -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #14b8a6;">
+        <span style="font-size:16px;">🔗</span>
+        <h3>subscription_addons</h3>
+        <span>가입 부가서비스 (N:M 해소)</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">subscription_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ subscriptions.id</td></tr>
+        <tr><td class="col-name">addon_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span></td><td class="col-desc">→ addons.id</td></tr>
+        <tr><td class="col-name">price_snapshot</td><td class="col-type">INT</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">가입 당시 요금 스냅샷</td></tr>
+        <tr><td class="col-name">added_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">부가서비스 추가일시</td></tr>
+        <tr><td class="col-name">removed_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">해지일시 (NULL=현재 이용중)</td></tr>
+        <tr style="background:#0f172a"><td colspan="4" style="padding:6px 12px;font-size:11px;color:#475569;">UNIQUE (subscription_id, addon_id) WHERE removed_at IS NULL</td></tr>
+      </table>
+    </div>
+
+    <!-- lifecycle_events -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #f97316;">
+        <span style="font-size:16px;">📜</span>
+        <h3>lifecycle_events</h3>
+        <span>상태 변경 이벤트 이력</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">subscription_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">→ subscriptions.id</td></tr>
+        <tr><td class="col-name">event_type</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">order_created / identity_verified / activated / plan_changed / suspended / resumed / terminated</td></tr>
+        <tr><td class="col-name">from_status</td><td class="col-type">ENUM</td><td></td><td class="col-desc">변경 전 상태</td></tr>
+        <tr><td class="col-name">to_status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span></td><td class="col-desc">변경 후 상태</td></tr>
+        <tr><td class="col-name">reason</td><td class="col-type">VARCHAR(200)</td><td></td><td class="col-desc">사유 (고객 요청 / 연체 등)</td></tr>
+        <tr><td class="col-name">performed_at</td><td class="col-type">TIMESTAMP</td><td class="col-constraint"><span class="badge def">DEF:NOW</span></td><td class="col-desc">이벤트 발생일시</td></tr>
+      </table>
+    </div>
+
+    <!-- msisdn_pool -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #06b6d4;">
+        <span style="font-size:16px;">📞</span>
+        <h3>msisdn_pool</h3>
+        <span>전화번호 자원 풀</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">msisdn</td><td class="col-type">VARCHAR(15)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">전화번호 (010-XXXX-XXXX)</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">available / assigned / reserved</td></tr>
+        <tr><td class="col-name">subscription_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span></td><td class="col-desc">→ subscriptions.id (할당된 가입)</td></tr>
+        <tr><td class="col-name">assigned_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">번호 할당일시</td></tr>
+        <tr><td class="col-name">released_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">번호 반납일시</td></tr>
+      </table>
+    </div>
+
+    <!-- sim_inventory -->
+    <div class="schema-card">
+      <div class="schema-card-head" style="border-left:4px solid #06b6d4;">
+        <span style="font-size:16px;">💳</span>
+        <h3>sim_inventory</h3>
+        <span>SIM 카드 재고</span>
+      </div>
+      <table class="schema-table">
+        <tr><th>컬럼명</th><th>타입</th><th>제약</th><th>설명</th></tr>
+        <tr><td class="col-name">id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge pk">PK</span></td><td class="col-desc">자동증가 기본키</td></tr>
+        <tr><td class="col-name">sim_no</td><td class="col-type">VARCHAR(20)</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge uq">UQ</span></td><td class="col-desc">SIM 식별 번호 (ICCID)</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">ENUM</td><td class="col-constraint"><span class="badge nn">NN</span><span class="badge idx">IDX</span></td><td class="col-desc">available / issued / deactivated</td></tr>
+        <tr><td class="col-name">subscription_id</td><td class="col-type">BIGINT</td><td class="col-constraint"><span class="badge fk">FK</span></td><td class="col-desc">→ subscriptions.id (발급된 가입)</td></tr>
+        <tr><td class="col-name">issued_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">SIM 발급일시</td></tr>
+        <tr><td class="col-name">returned_at</td><td class="col-type">TIMESTAMP</td><td></td><td class="col-desc">SIM 반납일시 (해지 시)</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div><!-- /sec-lifecycle-schema -->
+</div><!-- /tab-schema -->
 
 <!-- ════════════════════════════════ RELATIONS TAB ════════════════════════════════ -->
 <div id="tab-relations" class="hidden">
+<div class="sec-content" data-sec="launch">
   <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;">
     <table class="rel-table">
       <tr>
@@ -537,10 +902,27 @@
       <tr><td style="color:#64748b;font-size:12px;">12</td><td><span class="tname">features</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">product_features</span></td><td><code style="font-size:11px;color:#60a5fa;">feature_id</code></td><td style="font-size:12px;color:#94a3b8;">N:M 해소 테이블 (기능→)</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
     </table>
   </div>
-</div>
+</div><!-- /sec-launch-rel -->
+<div class="sec-content hidden" data-sec="lifecycle">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;">
+    <table class="rel-table">
+      <tr><th>#</th><th>부모 테이블</th><th>관계</th><th>자식 테이블</th><th>FK 컬럼</th><th>설명</th><th>ON DELETE</th></tr>
+      <tr><td style="color:#64748b;font-size:12px;">1</td><td><span class="tname">customers</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">subscriptions</span></td><td><code style="font-size:11px;color:#60a5fa;">customer_id</code></td><td style="font-size:12px;color:#94a3b8;">고객 1명이 여러 가입 계약 보유 가능</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">2</td><td><span class="tname">plans</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">subscriptions</span></td><td><code style="font-size:11px;color:#60a5fa;">plan_id</code></td><td style="font-size:12px;color:#94a3b8;">요금제 1개에 여러 가입 (요금제 변경 시 plan_id 갱신)</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">3</td><td><span class="tname">contract_types</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">subscriptions</span></td><td><code style="font-size:11px;color:#60a5fa;">contract_type_id</code></td><td style="font-size:12px;color:#94a3b8;">약정 유형 1개에 여러 가입</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">4</td><td><span class="tname">subscriptions</span></td><td><span class="rel-type rel-nm">N : M</span></td><td><span class="tname">addons</span></td><td><code style="font-size:11px;color:#60a5fa;">subscription_addons</code></td><td style="font-size:12px;color:#94a3b8;">가입당 여러 부가서비스, 부가서비스는 여러 가입에 사용</td><td style="font-size:11px;color:#475569;">CASCADE</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">5</td><td><span class="tname">subscriptions</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">lifecycle_events</span></td><td><code style="font-size:11px;color:#60a5fa;">subscription_id</code></td><td style="font-size:12px;color:#94a3b8;">가입 계약의 상태 변경 이력 전체</td><td style="font-size:11px;color:#475569;">CASCADE</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">6</td><td><span class="tname">subscriptions</span></td><td><span class="rel-type rel-11">1 : 1</span></td><td><span class="tname">msisdn_pool</span></td><td><code style="font-size:11px;color:#60a5fa;">subscription_id</code></td><td style="font-size:12px;color:#94a3b8;">활성 가입 1개에 전화번호 1개 배정</td><td style="font-size:11px;color:#475569;">SET NULL</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">7</td><td><span class="tname">subscriptions</span></td><td><span class="rel-type rel-11">1 : 1</span></td><td><span class="tname">sim_inventory</span></td><td><code style="font-size:11px;color:#60a5fa;">subscription_id</code></td><td style="font-size:12px;color:#94a3b8;">활성 가입 1개에 SIM 카드 1개 발급</td><td style="font-size:11px;color:#475569;">SET NULL</td></tr>
+      <tr><td style="color:#64748b;font-size:12px;">8</td><td><span class="tname">addons</span></td><td><span class="rel-type rel-1n">1 : N</span></td><td><span class="tname">subscription_addons</span></td><td><code style="font-size:11px;color:#60a5fa;">addon_id</code></td><td style="font-size:12px;color:#94a3b8;">N:M 해소 테이블 (부가서비스→)</td><td style="font-size:11px;color:#475569;">RESTRICT</td></tr>
+    </table>
+  </div>
+</div><!-- /sec-lifecycle-rel -->
+</div><!-- /tab-relations -->
 
 <!-- ════════════════════════════════ DDL TAB ════════════════════════════════ -->
 <div id="tab-ddl" class="hidden">
+<div class="sec-content" data-sec="launch">
   <div class="ddl-wrap">
 
     <div class="ddl-block">
@@ -713,11 +1095,180 @@
     </div>
 
   </div>
-</div>
+</div><!-- /sec-launch-ddl -->
+<div class="sec-content hidden" data-sec="lifecycle">
+  <div class="ddl-wrap">
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)"><span>customers + contract_types</span><small>▼ 펼치기</small></div>
+      <div class="ddl-body">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">customers</span> (
+  <span class="nm">id</span>                  <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">name</span>                <span class="tp">VARCHAR(60)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">phone</span>               <span class="tp">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">id_number_prefix</span>    <span class="tp">VARCHAR(8)</span>  <span class="kw">NOT NULL</span>,  <span class="cm">-- 암호화 저장 권장</span>
+  <span class="nm">credit_grade</span>        <span class="tp">ENUM</span>(<span class="str">'A'</span>,<span class="str">'B'</span>,<span class="str">'C'</span>,<span class="str">'D'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'A'</span>,
+  <span class="nm">identity_verified</span>   <span class="tp">BOOLEAN</span>     <span class="kw">NOT NULL DEFAULT</span> <span class="str">FALSE</span>,
+  <span class="nm">created_at</span>          <span class="tp">TIMESTAMP</span>   <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">KEY</span> <span class="nm">idx_customers_phone</span> (<span class="nm">phone</span>)
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;
+
+<span class="kw">CREATE TABLE</span> <span class="nm">contract_types</span> (
+  <span class="nm">id</span>            <span class="tp">BIGINT</span>         <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">code</span>          <span class="tp">VARCHAR(20)</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">label</span>         <span class="tp">VARCHAR(30)</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">discount_rate</span> <span class="tp">DECIMAL(4,2)</span>   <span class="kw">NOT NULL DEFAULT</span> 0.00,
+  <span class="nm">months</span>        <span class="tp">INT</span>            <span class="kw">NOT NULL DEFAULT</span> 0,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span> <span class="nm">uq_ct_code</span> (<span class="nm">code</span>)
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)"><span>plans + addons</span><small>▼ 펼치기</small></div>
+      <div class="ddl-body">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">plans</span> (
+  <span class="nm">id</span>             <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">code</span>           <span class="tp">VARCHAR(30)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">name</span>           <span class="tp">VARCHAR(60)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">badge</span>          <span class="tp">VARCHAR(10)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">base_price</span>     <span class="tp">INT</span>         <span class="kw">NOT NULL</span>,
+  <span class="nm">data_allowance</span> <span class="tp">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">description</span>    <span class="tp">TEXT</span>,
+  <span class="nm">is_active</span>      <span class="tp">BOOLEAN</span>     <span class="kw">NOT NULL DEFAULT</span> <span class="str">TRUE</span>,
+  <span class="kw">PRIMARY KEY</span>    (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>     <span class="nm">uq_plans_code</span> (<span class="nm">code</span>)
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;
+
+<span class="kw">CREATE TABLE</span> <span class="nm">addons</span> (
+  <span class="nm">id</span>        <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">code</span>      <span class="tp">VARCHAR(30)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">name</span>      <span class="tp">VARCHAR(60)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">icon</span>      <span class="tp">VARCHAR(10)</span>,
+  <span class="nm">price</span>     <span class="tp">INT</span>         <span class="kw">NOT NULL DEFAULT</span> 0,
+  <span class="nm">is_active</span> <span class="tp">BOOLEAN</span>     <span class="kw">NOT NULL DEFAULT</span> <span class="str">TRUE</span>,
+  <span class="kw">PRIMARY KEY</span> (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>  <span class="nm">uq_addons_code</span> (<span class="nm">code</span>)
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)"><span>subscriptions</span><small>▼ 펼치기</small></div>
+      <div class="ddl-body">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">subscriptions</span> (
+  <span class="nm">id</span>               <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">customer_id</span>      <span class="tp">BIGINT</span>      <span class="kw">NOT NULL</span>,
+  <span class="nm">plan_id</span>          <span class="tp">BIGINT</span>      <span class="kw">NOT NULL</span>,
+  <span class="nm">contract_type_id</span> <span class="tp">BIGINT</span>      <span class="kw">NOT NULL</span>,
+  <span class="nm">status</span>           <span class="tp">ENUM</span>(<span class="str">'ordering'</span>,<span class="str">'verifying'</span>,<span class="str">'activating'</span>,<span class="str">'active'</span>,
+                        <span class="str">'suspended'</span>,<span class="str">'terminating'</span>,<span class="str">'terminated'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'ordering'</span>,
+  <span class="nm">msisdn</span>           <span class="tp">VARCHAR(15)</span> <span class="kw">NULL</span>,
+  <span class="nm">sim_no</span>           <span class="tp">VARCHAR(20)</span> <span class="kw">NULL</span>,
+  <span class="nm">monthly_price</span>    <span class="tp">INT</span>         <span class="kw">NULL</span>,
+  <span class="nm">activated_at</span>     <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="nm">suspended_at</span>     <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="nm">terminated_at</span>    <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="nm">created_at</span>       <span class="tp">TIMESTAMP</span>   <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>   <span class="nm">uq_sub_msisdn</span> (<span class="nm">msisdn</span>),
+  <span class="kw">UNIQUE KEY</span>   <span class="nm">uq_sub_sim</span>    (<span class="nm">sim_no</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_sub_customer</span> (<span class="nm">customer_id</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_sub_status</span>   (<span class="nm">status</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_sub_customer</span>  <span class="kw">FOREIGN KEY</span> (<span class="nm">customer_id</span>)      <span class="kw">REFERENCES</span> <span class="nm">customers</span>(<span class="nm">id</span>)      <span class="kw">ON DELETE RESTRICT</span>,
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_sub_plan</span>      <span class="kw">FOREIGN KEY</span> (<span class="nm">plan_id</span>)          <span class="kw">REFERENCES</span> <span class="nm">plans</span>(<span class="nm">id</span>)          <span class="kw">ON DELETE RESTRICT</span>,
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_sub_contract</span>  <span class="kw">FOREIGN KEY</span> (<span class="nm">contract_type_id</span>) <span class="kw">REFERENCES</span> <span class="nm">contract_types</span>(<span class="nm">id</span>) <span class="kw">ON DELETE RESTRICT</span>
+) <span class="kw">ENGINE</span>=InnoDB <span class="kw">DEFAULT CHARSET</span>=utf8mb4;</pre>
+      </div>
+    </div>
+
+    <div class="ddl-block">
+      <div class="ddl-head" onclick="toggleDDL(this)"><span>subscription_addons + lifecycle_events + msisdn_pool + sim_inventory</span><small>▼ 펼치기</small></div>
+      <div class="ddl-body">
+<pre><span class="kw">CREATE TABLE</span> <span class="nm">subscription_addons</span> (
+  <span class="nm">id</span>               <span class="tp">BIGINT</span>    <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">subscription_id</span>  <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">addon_id</span>         <span class="tp">BIGINT</span>    <span class="kw">NOT NULL</span>,
+  <span class="nm">price_snapshot</span>   <span class="tp">INT</span>       <span class="kw">NOT NULL</span>,
+  <span class="nm">added_at</span>         <span class="tp">TIMESTAMP</span> <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="nm">removed_at</span>       <span class="tp">TIMESTAMP</span> <span class="kw">NULL</span>,
+  <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_sa_sub</span>   (<span class="nm">subscription_id</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_sa_sub</span>   <span class="kw">FOREIGN KEY</span> (<span class="nm">subscription_id</span>) <span class="kw">REFERENCES</span> <span class="nm">subscriptions</span>(<span class="nm">id</span>) <span class="kw">ON DELETE CASCADE</span>,
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_sa_addon</span> <span class="kw">FOREIGN KEY</span> (<span class="nm">addon_id</span>)         <span class="kw">REFERENCES</span> <span class="nm">addons</span>(<span class="nm">id</span>)         <span class="kw">ON DELETE RESTRICT</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="nm">lifecycle_events</span> (
+  <span class="nm">id</span>               <span class="tp">BIGINT</span>       <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">subscription_id</span>  <span class="tp">BIGINT</span>       <span class="kw">NOT NULL</span>,
+  <span class="nm">event_type</span>       <span class="tp">ENUM</span>(<span class="str">'order_created'</span>,<span class="str">'identity_verified'</span>,<span class="str">'activated'</span>,
+                        <span class="str">'plan_changed'</span>,<span class="str">'suspended'</span>,<span class="str">'resumed'</span>,<span class="str">'terminated'</span>) <span class="kw">NOT NULL</span>,
+  <span class="nm">from_status</span>      <span class="tp">ENUM</span>(<span class="str">'ordering'</span>,<span class="str">'verifying'</span>,<span class="str">'activating'</span>,<span class="str">'active'</span>,
+                        <span class="str">'suspended'</span>,<span class="str">'terminating'</span>,<span class="str">'terminated'</span>) <span class="kw">NULL</span>,
+  <span class="nm">to_status</span>        <span class="tp">ENUM</span>(<span class="str">'ordering'</span>,<span class="str">'verifying'</span>,<span class="str">'activating'</span>,<span class="str">'active'</span>,
+                        <span class="str">'suspended'</span>,<span class="str">'terminating'</span>,<span class="str">'terminated'</span>) <span class="kw">NOT NULL</span>,
+  <span class="nm">reason</span>           <span class="tp">VARCHAR(200)</span> <span class="kw">NULL</span>,
+  <span class="nm">performed_at</span>     <span class="tp">TIMESTAMP</span>    <span class="kw">NOT NULL DEFAULT</span> <span class="str">CURRENT_TIMESTAMP</span>,
+  <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_le_sub</span>   (<span class="nm">subscription_id</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_le_sub</span>   <span class="kw">FOREIGN KEY</span> (<span class="nm">subscription_id</span>) <span class="kw">REFERENCES</span> <span class="nm">subscriptions</span>(<span class="nm">id</span>) <span class="kw">ON DELETE CASCADE</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="nm">msisdn_pool</span> (
+  <span class="nm">id</span>               <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">msisdn</span>           <span class="tp">VARCHAR(15)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">status</span>           <span class="tp">ENUM</span>(<span class="str">'available'</span>,<span class="str">'assigned'</span>,<span class="str">'reserved'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'available'</span>,
+  <span class="nm">subscription_id</span>  <span class="tp">BIGINT</span>      <span class="kw">NULL</span>,
+  <span class="nm">assigned_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="nm">released_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>   <span class="nm">uq_mp_msisdn</span> (<span class="nm">msisdn</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_mp_status</span> (<span class="nm">status</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_mp_sub</span>    <span class="kw">FOREIGN KEY</span> (<span class="nm">subscription_id</span>) <span class="kw">REFERENCES</span> <span class="nm">subscriptions</span>(<span class="nm">id</span>) <span class="kw">ON DELETE SET NULL</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="nm">sim_inventory</span> (
+  <span class="nm">id</span>               <span class="tp">BIGINT</span>      <span class="kw">NOT NULL AUTO_INCREMENT</span>,
+  <span class="nm">sim_no</span>           <span class="tp">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,
+  <span class="nm">status</span>           <span class="tp">ENUM</span>(<span class="str">'available'</span>,<span class="str">'issued'</span>,<span class="str">'deactivated'</span>) <span class="kw">NOT NULL DEFAULT</span> <span class="str">'available'</span>,
+  <span class="nm">subscription_id</span>  <span class="tp">BIGINT</span>      <span class="kw">NULL</span>,
+  <span class="nm">issued_at</span>        <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="nm">returned_at</span>      <span class="tp">TIMESTAMP</span>   <span class="kw">NULL</span>,
+  <span class="kw">PRIMARY KEY</span>  (<span class="nm">id</span>),
+  <span class="kw">UNIQUE KEY</span>   <span class="nm">uq_si_sim</span>    (<span class="nm">sim_no</span>),
+  <span class="kw">KEY</span>          <span class="nm">idx_si_status</span> (<span class="nm">status</span>),
+  <span class="kw">CONSTRAINT</span>   <span class="nm">fk_si_sub</span>    <span class="kw">FOREIGN KEY</span> (<span class="nm">subscription_id</span>) <span class="kw">REFERENCES</span> <span class="nm">subscriptions</span>(<span class="nm">id</span>) <span class="kw">ON DELETE SET NULL</span>
+);</pre>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /sec-lifecycle-ddl -->
+</div><!-- /tab-ddl -->
 
 </div><!-- /content -->
 
 <script>
+let currentSection = 'launch';
+
+function showSection(sec) {
+  currentSection = sec;
+  document.querySelectorAll('.sec-content').forEach(el => {
+    el.classList.toggle('hidden', el.dataset.sec !== sec);
+  });
+  document.querySelectorAll('.sec-btn').forEach(el => {
+    el.classList.toggle('active-sec', el.dataset.sec === sec);
+  });
+  // update summary
+  const s = sec === 'launch'
+    ? {tbl:8, fk:12, col:52, extra:'4 워크플로우 단계'}
+    : {tbl:9, fk:8,  col:63, extra:'7 라이프사이클 상태'};
+  const nums = document.querySelectorAll('.summary-num-' + sec);
+  // handled by separate summary cards per section
+}
+
 function showTab(name) {
   ['erd','schema','relations','ddl'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);

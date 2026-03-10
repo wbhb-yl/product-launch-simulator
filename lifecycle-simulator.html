@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>📡 통신 서비스 라이프사이클 시뮬레이터</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;overflow-x:hidden;}
+  input,select,textarea,button{font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset:1px;}
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:#1e293b;}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px;}
+  input,select{background:#0f172a;color:#e2e8f0;border:1.5px solid #334155;border-radius:7px;padding:8px 11px;font-size:13px;width:100%;}
+  select option{background:#1e293b;}
+  .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+  .tag-blue{background:#1e3a5f;color:#60a5fa;}
+  .tag-purple{background:#2d1b69;color:#a78bfa;}
+  .tag-green{background:#14532d;color:#4ade80;}
+  .tag-orange{background:#431407;color:#fb923c;}
+  .tag-teal{background:#134e4a;color:#2dd4bf;}
+  .tag-gray{background:#1e293b;color:#94a3b8;}
+  .tag-red{background:#450a0a;color:#f87171;}
+  .tag-yellow{background:#422006;color:#fbbf24;}
+  .btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary{background:#2563eb;color:#fff;}
+  .btn-primary:hover:not(:disabled){background:#1d4ed8;}
+  .btn-success{background:#16a34a;color:#fff;}
+  .btn-success:hover:not(:disabled){background:#15803d;}
+  .btn-warning{background:#d97706;color:#fff;}
+  .btn-warning:hover:not(:disabled){background:#b45309;}
+  .btn-danger{background:#dc2626;color:#fff;}
+  .btn-danger:hover:not(:disabled){background:#b91c1c;}
+  .btn-ghost{background:#1e293b;color:#cbd5e1;border:1px solid #334155;}
+  .btn-ghost:hover:not(:disabled){background:#263348;border-color:#60a5fa;}
+  .btn-teal{background:#0d9488;color:#fff;}
+  .btn-teal:hover:not(:disabled){background:#0f766e;}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;}
+  .card-sm{background:#1e293b;border:1px solid #334155;border-radius:9px;padding:12px;}
+  .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#64748b;margin-bottom:10px;}
+  .divider{border:none;border-top:1px solid #1e293b;margin:12px 0;}
+  @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+  .animate-fade{animation:fadeIn .3s ease;}
+  .animate-spin{animation:spin 1s linear infinite;}
+  .animate-pulse{animation:pulse 1.5s ease-in-out infinite;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ══════════════════════════════════════════════
+// 데이터 정의
+// ══════════════════════════════════════════════
+const PLANS = [
+  { id:'lte_lite',    name:'LTE 라이트',     price:19900, type:'LTE', data:'5GB',    speed:'75Mbps',  voice:'200분', sms:'기본' },
+  { id:'5g_basic',    name:'5G 베이직',      price:34900, type:'5G',  data:'30GB',   speed:'1Gbps',   voice:'무제한', sms:'무제한' },
+  { id:'5g_standard', name:'5G 스탠다드',    price:49900, type:'5G',  data:'100GB',  speed:'1Gbps',   voice:'무제한', sms:'무제한' },
+  { id:'5g_premium',  name:'5G 프리미엄',    price:69900, type:'5G',  data:'완전무제한',speed:'20Gbps', voice:'무제한', sms:'무제한' },
+];
+const ADDONS = [
+  { id:'intl_call',  name:'국제전화 패키지',  price:9900,  icon:'📞', desc:'월 100분 국제통화' },
+  { id:'data_1gb',   name:'데이터 1GB 추가', price:3300,  icon:'📦', desc:'일회성 1GB 충전' },
+  { id:'roaming',    name:'아시아 로밍',      price:8900,  icon:'✈️', desc:'아시아 15개국' },
+  { id:'youtube',    name:'유튜브 프리미엄',  price:14000, icon:'▶️', desc:'광고 없는 유튜브' },
+  { id:'voicemail',  name:'음성사서함',       price:1100,  icon:'📬', desc:'부재중 메시지 저장' },
+];
+const CONTRACT_OPTIONS = [
+  { id:'monthly', name:'월정', penalty:0 },
+  { id:'c12',     name:'12개월 약정', penalty:3 },
+  { id:'c24',     name:'24개월 약정', penalty:6 },
+];
+
+// TM Forum 레퍼런스
+const TMF_APIS = {
+  TMF620:'Product Catalog Management',
+  TMF622:'Product Ordering Management',
+  TMF632:'Party Management',
+  TMF637:'Product Inventory Management',
+  TMF638:'Service Inventory Management',
+  TMF639:'Resource Inventory Management',
+  TMF641:'Service Ordering Management',
+  TMF666:'Account Management',
+  TMF678:'Payment Management',
+};
+const ETOM_PROCESSES = {
+  order_handling:     { code:'OP.2.2', name:'Order Handling', domain:'CRM' },
+  identity_mgmt:      { code:'OP.2.1', name:'Customer Interface Mgmt', domain:'CRM' },
+  service_config:     { code:'OP.3.4', name:'SM&O — Service Configuration & Activation', domain:'SM&O' },
+  resource_provision: { code:'OP.4.2', name:'RM&O — Resource Provisioning', domain:'RM&O' },
+  problem_handling:   { code:'OP.2.3', name:'Problem Handling', domain:'CRM' },
+  billing:            { code:'OP.2.5', name:'Billing & Collections Mgmt', domain:'CRM' },
+  qos_mgmt:           { code:'OP.2.4', name:'Customer QoS/SLA Mgmt', domain:'CRM' },
+};
+const SID_ENTITIES = {
+  Party:         { domain:'Party ABE',   desc:'고객 신원 및 연락처 정보' },
+  Customer:      { domain:'Party ABE',   desc:'서비스 구독 고객 역할' },
+  ProductOrder:  { domain:'Product ABE', desc:'상품 주문 요청 엔티티' },
+  Product:       { domain:'Product ABE', desc:'구독 중인 상품 인스턴스' },
+  Service:       { domain:'Service ABE', desc:'음성·데이터 서비스 인스턴스' },
+  Resource:      { domain:'Resource ABE',desc:'MSISDN, SIM, 네트워크 포트' },
+  Agreement:     { domain:'Party ABE',   desc:'약정 계약 엔티티' },
+  Account:       { domain:'Party ABE',   desc:'청구 계정' },
+};
+
+// 상태 머신 정의
+const STATES = {
+  idle:               { label:'가입신청',   icon:'📝', color:'#64748b' },
+  order_created:      { label:'주문생성',   icon:'📋', color:'#d97706' },
+  identity_verified:  { label:'본인인증',   icon:'🪪', color:'#8b5cf6' },
+  activating:         { label:'개통중',     icon:'⚡', color:'#3b82f6' },
+  active:             { label:'이용중',     icon:'✅', color:'#16a34a' },
+  suspended:          { label:'일시정지',   icon:'⏸', color:'#f97316' },
+  terminating:        { label:'해지처리',   icon:'🔄', color:'#ef4444' },
+  terminated:         { label:'해지완료',   icon:'⛔', color:'#6b7280' },
+};
+const STATE_FLOW = ['idle','order_created','identity_verified','activating','active','suspended','terminated'];
+
+function generateMSISDN() {
+  return '010-' + String(Math.floor(1000+Math.random()*9000)) + '-' + String(Math.floor(1000+Math.random()*9000));
+}
+function generateICCID() {
+  return '8921010' + String(Math.floor(100000000000+Math.random()*899999999999));
+}
+function generateOrderId() {
+  return 'ORD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+}
+function currency(n) { return n.toLocaleString('ko-KR') + '원'; }
+function ts() { return new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+
+// ══════════════════════════════════════════════
+// 서브 컴포넌트
+// ══════════════════════════════════════════════
+
+function TopNav() {
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+      padding:'11px 24px', background:'#0a0f1c', borderBottom:'1px solid #1e293b' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <span style={{ fontSize:20 }}>📡</span>
+        <span style={{ fontWeight:800, fontSize:15, color:'#f1f5f9' }}>통신 서비스 라이프사이클 시뮬레이터</span>
+        <span className="tag tag-teal" style={{ marginLeft:4 }}>TM Forum eTOM · SID · Open API</span>
+      </div>
+      <div style={{ display:'flex', gap:8 }}>
+        <a href="index.html" style={{ display:'inline-flex', alignItems:'center', gap:5,
+          padding:'6px 13px', borderRadius:7, background:'#1e293b', color:'#cbd5e1',
+          textDecoration:'none', fontSize:12, fontWeight:600, border:'1px solid #334155' }}>
+          ← 상품 출시 시뮬레이터
+        </a>
+        <a href="product-launch-db-schema.html" style={{ display:'inline-flex', alignItems:'center', gap:5,
+          padding:'6px 13px', borderRadius:7, background:'#1e293b', color:'#cbd5e1',
+          textDecoration:'none', fontSize:12, fontWeight:600, border:'1px solid #334155' }}>
+          🗄 DB 구조도
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function LifecycleBar({ state, planChanges }) {
+  const mainFlow = ['idle','order_created','identity_verified','activating','active','terminated'];
+  const cur = STATES[state];
+  const curIdx = mainFlow.indexOf(state === 'suspended' || state === 'terminating' ? 'active' : state);
+  return (
+    <div style={{ background:'#0a0f1c', borderBottom:'1px solid #1e293b', padding:'14px 24px' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:0 }}>
+        {mainFlow.map((s, i) => {
+          const st = STATES[s];
+          const done = i < curIdx || (state === 'terminated' && s === 'terminated');
+          const active = state === s || (state === 'suspended' && s === 'active') || (state === 'terminating' && s === 'terminated');
+          return (
+            <React.Fragment key={s}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, position:'relative' }}>
+                <div style={{
+                  width:36, height:36, borderRadius:'50%', display:'flex', alignItems:'center',
+                  justifyContent:'center', fontSize:16,
+                  background: done ? '#15803d' : active ? st.color : '#1e293b',
+                  border: `2px solid ${done ? '#16a34a' : active ? st.color : '#334155'}`,
+                  boxShadow: active ? `0 0 0 3px ${st.color}44` : 'none',
+                  transition:'all .3s',
+                }}>
+                  {done ? '✓' : st.icon}
+                </div>
+                <span style={{ fontSize:10, color: active ? st.color : done ? '#4ade80' : '#475569',
+                  fontWeight: active ? 700 : 400, whiteSpace:'nowrap' }}>
+                  {st.label}
+                </span>
+                {/* 부가 표시 */}
+                {s === 'active' && state === 'suspended' && (
+                  <span style={{ position:'absolute', top:-6, right:-6, background:'#f97316',
+                    color:'#fff', fontSize:9, padding:'1px 4px', borderRadius:3, fontWeight:700 }}>⏸</span>
+                )}
+                {s === 'active' && planChanges > 0 && state === 'active' && (
+                  <span style={{ position:'absolute', top:-6, right:-8, background:'#8b5cf6',
+                    color:'#fff', fontSize:9, padding:'1px 4px', borderRadius:3, fontWeight:700 }}>변경{planChanges}</span>
+                )}
+              </div>
+              {i < mainFlow.length - 1 && (
+                <div style={{ flex:1, height:2, background: i < curIdx ? '#16a34a' : '#1e293b',
+                  margin:'0 4px', marginBottom:18, borderRadius:1, transition:'background .3s', minWidth:20 }} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      {/* 현재 상태 */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:10 }}>
+        <div style={{ width:8, height:8, borderRadius:'50%', background:cur.color,
+          animation: (state==='activating'||state==='terminating') ? 'pulse 1.5s infinite' : 'none' }} />
+        <span style={{ fontSize:12, color:cur.color, fontWeight:700 }}>현재 상태: {cur.label}</span>
+        {(state==='activating'||state==='terminating') &&
+          <span className="tag tag-yellow animate-pulse">처리중...</span>}
+        {state==='active' && <span className="tag tag-green">서비스 정상</span>}
+        {state==='suspended' && <span className="tag tag-orange">서비스 중단</span>}
+        {state==='terminated' && <span className="tag tag-gray">계약 종료</span>}
+      </div>
+    </div>
+  );
+}
+
+// 왼쪽 패널 — SID 엔티티
+function LeftPanel({ customer, plan, resource, agreement, addons, state }) {
+  const hasCustomer = customer.name;
+  const hasPlan = !!plan;
+  const hasResource = !!resource.msisdn;
+
+  return (
+    <div style={{ width:268, flexShrink:0, display:'flex', flexDirection:'column', gap:10,
+      overflowY:'auto', paddingRight:4 }}>
+
+      {/* Party / Customer */}
+      <div className="card-sm">
+        <div className="section-title">SID — Party / Customer</div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+          <div style={{ width:36, height:36, borderRadius:'50%', background: hasCustomer ? '#1d4ed8' : '#1e293b',
+            display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, border:'2px solid #334155' }}>
+            {hasCustomer ? '👤' : '?'}
+          </div>
+          <div>
+            <div style={{ fontWeight:700, fontSize:13, color: hasCustomer ? '#f1f5f9' : '#475569' }}>
+              {hasCustomer ? customer.name : '미등록'}
+            </div>
+            <div style={{ fontSize:11, color:'#64748b' }}>{hasCustomer ? customer.id : '고객 정보 없음'}</div>
+          </div>
+        </div>
+        {hasCustomer && (<>
+          <SIDRow label="생년월일" value={customer.birth} />
+          <SIDRow label="연락처" value={customer.phone} />
+          <SIDRow label="본인인증" value={customer.verified ? '✅ 완료' : '⏳ 미완료'} highlight={customer.verified} />
+          <SIDRow label="가입일시" value={customer.joinedAt || '—'} />
+        </>)}
+        <div style={{ display:'flex', gap:4, marginTop:8, flexWrap:'wrap' }}>
+          <span className="tag tag-blue">TMF632</span>
+          <span className="tag tag-gray">Party ABE</span>
+          <span className="tag tag-purple">OP.2.1</span>
+        </div>
+      </div>
+
+      {/* Product */}
+      <div className="card-sm">
+        <div className="section-title">SID — Product / Agreement</div>
+        {hasPlan ? (
+          <>
+            <div style={{ background:'linear-gradient(135deg,#1d4ed8,#7c3aed)', borderRadius:8,
+              padding:10, marginBottom:8, color:'#fff' }}>
+              <div style={{ fontSize:11, opacity:.8 }}>구독 상품</div>
+              <div style={{ fontSize:15, fontWeight:800 }}>{plan.name}</div>
+              <div style={{ fontSize:13, fontWeight:600, opacity:.9 }}>{currency(plan.price)}/월</div>
+            </div>
+            <SIDRow label="데이터" value={plan.data} />
+            <SIDRow label="속도" value={plan.speed} />
+            <SIDRow label="음성" value={plan.voice} />
+            {agreement && <SIDRow label="약정" value={agreement.name} />}
+            {addons.length > 0 && (
+              <div style={{ marginTop:6 }}>
+                <div style={{ fontSize:10, color:'#64748b', marginBottom:4 }}>부가서비스 ({addons.length})</div>
+                {addons.map(a => (
+                  <div key={a.id} style={{ fontSize:11, color:'#94a3b8', marginBottom:2 }}>
+                    {a.icon} {a.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{ color:'#475569', fontSize:12, textAlign:'center', padding:'10px 0' }}>상품 미선택</div>
+        )}
+        <div style={{ display:'flex', gap:4, marginTop:8, flexWrap:'wrap' }}>
+          <span className="tag tag-blue">TMF622</span>
+          <span className="tag tag-blue">TMF637</span>
+          <span className="tag tag-gray">Product ABE</span>
+        </div>
+      </div>
+
+      {/* Resource */}
+      <div className="card-sm">
+        <div className="section-title">SID — Service / Resource</div>
+        {hasResource ? (
+          <>
+            <SIDRow label="MSISDN" value={resource.msisdn} highlight />
+            <SIDRow label="ICCID" value={resource.iccid ? resource.iccid.slice(0,12)+'...' : '—'} />
+            <SIDRow label="네트워크" value={resource.network || '—'} />
+            <SIDRow label="서비스 상태" value={
+              state==='active' ? '✅ 활성' :
+              state==='suspended' ? '⏸ 정지' :
+              state==='terminated' ? '⛔ 해지' : '⏳ 처리중'} />
+          </>
+        ) : (
+          <div style={{ color:'#475569', fontSize:12, textAlign:'center', padding:'10px 0' }}>
+            번호 미할당
+          </div>
+        )}
+        <div style={{ display:'flex', gap:4, marginTop:8, flexWrap:'wrap' }}>
+          <span className="tag tag-blue">TMF638</span>
+          <span className="tag tag-blue">TMF639</span>
+          <span className="tag tag-gray">Resource ABE</span>
+        </div>
+      </div>
+
+      {/* Account */}
+      <div className="card-sm">
+        <div className="section-title">SID — Account / Billing</div>
+        {hasPlan && hasResource ? (
+          <>
+            <SIDRow label="계정 ID" value={'ACC-' + (customer.id || '—').slice(-6)} />
+            <SIDRow label="청구 주기" value="매월 1일" />
+            <SIDRow label="예상 청구액" value={currency((plan?.price||0) + addons.reduce((s,a)=>s+a.price,0))} highlight />
+          </>
+        ) : (
+          <div style={{ color:'#475569', fontSize:12, textAlign:'center', padding:'8px 0' }}>계정 미생성</div>
+        )}
+        <div style={{ display:'flex', gap:4, marginTop:8, flexWrap:'wrap' }}>
+          <span className="tag tag-blue">TMF666</span>
+          <span className="tag tag-blue">TMF678</span>
+          <span className="tag tag-gray">Party ABE</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SIDRow({ label, value, highlight }) {
+  return (
+    <div style={{ display:'flex', justifyContent:'space-between', padding:'3px 0',
+      borderBottom:'1px solid #0f172a', fontSize:11 }}>
+      <span style={{ color:'#64748b' }}>{label}</span>
+      <span style={{ color: highlight ? '#60a5fa' : '#cbd5e1', fontWeight: highlight ? 600 : 400,
+        maxWidth:140, textAlign:'right', wordBreak:'break-all' }}>{value}</span>
+    </div>
+  );
+}
+
+// 오른쪽 패널 — 이벤트 로그
+function EventLog({ events }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [events]);
+
+  const methodColor = { POST:'#4ade80', PATCH:'#fbbf24', DELETE:'#f87171', GET:'#60a5fa' };
+  const statusColor = (s) => s >= 200 && s < 300 ? '#4ade80' : s >= 400 ? '#f87171' : '#fbbf24';
+
+  return (
+    <div style={{ width:300, flexShrink:0, display:'flex', flexDirection:'column', gap:0 }}>
+      <div style={{ padding:'10px 14px', background:'#0a0f1c', borderRadius:'10px 10px 0 0',
+        border:'1px solid #334155', borderBottom:'none', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <span style={{ fontSize:12, fontWeight:700, color:'#94a3b8' }}>📡 API 이벤트 로그</span>
+        <span style={{ fontSize:10, color:'#475569' }}>{events.length} events</span>
+      </div>
+      <div ref={ref} style={{ flex:1, overflowY:'auto', maxHeight:'calc(100vh - 260px)',
+        background:'#0a0f1c', border:'1px solid #334155', borderTop:'none', borderRadius:'0 0 10px 10px',
+        padding:10, display:'flex', flexDirection:'column', gap:6 }}>
+        {events.length === 0 && (
+          <div style={{ color:'#334155', fontSize:12, textAlign:'center', padding:'20px 0' }}>
+            이벤트 없음<br/>
+            <span style={{ fontSize:10, color:'#1e293b' }}>가입 신청 시 로그가 쌓입니다</span>
+          </div>
+        )}
+        {events.map((e, i) => (
+          <div key={i} className="animate-fade" style={{ background:'#0f172a', border:'1px solid #1e293b',
+            borderLeft:`3px solid ${e.level==='error'?'#ef4444':e.level==='warn'?'#f59e0b':'#3b82f6'}`,
+            borderRadius:6, padding:'7px 9px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:4, flexWrap:'wrap' }}>
+              <span style={{ fontSize:9, color:'#475569', fontFamily:'monospace' }}>{e.time}</span>
+              <span className="tag" style={{ background:'#0f2744',
+                color: methodColor[e.method] || '#94a3b8', fontSize:9 }}>{e.method}</span>
+              <span className="tag tag-blue" style={{ fontSize:9 }}>{e.api}</span>
+              <span className="tag" style={{ background:'#0f172a', color:statusColor(e.status), fontSize:9,
+                border:`1px solid ${statusColor(e.status)}44` }}>{e.status}</span>
+            </div>
+            <div style={{ fontSize:10, color:'#60a5fa', fontFamily:'monospace', marginBottom:3,
+              wordBreak:'break-all' }}>{e.endpoint}</div>
+            <div style={{ fontSize:11, color:'#94a3b8' }}>{e.desc}</div>
+            {e.etom && (
+              <div style={{ marginTop:4, display:'flex', gap:4, flexWrap:'wrap' }}>
+                <span className="tag tag-purple" style={{ fontSize:9 }}>{e.etom}</span>
+                {e.sid && <span className="tag tag-teal" style={{ fontSize:9 }}>{e.sid}</span>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 가입 신청 단계 ──────────────────────────────
+function StepIdle({ onSubmit }) {
+  const [form, setForm] = useState({ name:'', birth:'', phone:'', email:'', plan:'5g_standard', contract:'c24' });
+  const set = (k,v) => setForm(p=>({...p,[k]:v}));
+  const valid = form.name && form.birth && form.phone;
+
+  return (
+    <div className="animate-fade">
+      <EtomBadge proc="order_handling" step="가입 신청 접수" api="TMF622" method="POST" endpoint="/productOrder" />
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+        <div>
+          <label style={{ fontSize:11, color:'#64748b', fontWeight:600, display:'block', marginBottom:4 }}>이름 *</label>
+          <input placeholder="홍길동" value={form.name} onChange={e=>set('name',e.target.value)} />
+        </div>
+        <div>
+          <label style={{ fontSize:11, color:'#64748b', fontWeight:600, display:'block', marginBottom:4 }}>생년월일 *</label>
+          <input placeholder="990101" value={form.birth} onChange={e=>set('birth',e.target.value)} />
+        </div>
+        <div>
+          <label style={{ fontSize:11, color:'#64748b', fontWeight:600, display:'block', marginBottom:4 }}>연락처 *</label>
+          <input placeholder="010-0000-0000" value={form.phone} onChange={e=>set('phone',e.target.value)} />
+        </div>
+        <div>
+          <label style={{ fontSize:11, color:'#64748b', fontWeight:600, display:'block', marginBottom:4 }}>이메일</label>
+          <input placeholder="hong@example.com" value={form.email} onChange={e=>set('email',e.target.value)} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom:14 }}>
+        <label style={{ fontSize:11, color:'#64748b', fontWeight:600, display:'block', marginBottom:8 }}>
+          요금제 선택 <span className="tag tag-blue" style={{ marginLeft:4 }}>TMF620 Product Catalog</span>
+        </label>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+          {PLANS.map(p => {
+            const on = form.plan === p.id;
+            return (
+              <div key={p.id} onClick={()=>set('plan',p.id)} style={{
+                border:`2px solid ${on?'#2563eb':'#334155'}`,
+                borderRadius:9, padding:10, cursor:'pointer',
+                background: on ? '#1e3a5f' : '#0f172a', transition:'all .2s' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                  <span style={{ fontWeight:700, fontSize:13, color: on?'#60a5fa':'#e2e8f0' }}>{p.name}</span>
+                  <span className={`tag ${p.type==='5G'?'tag-blue':'tag-green'}`}>{p.type}</span>
+                </div>
+                <div style={{ fontSize:15, fontWeight:800, color:'#f1f5f9' }}>{currency(p.price)}<span style={{ fontSize:11, color:'#64748b' }}>/월</span></div>
+                <div style={{ fontSize:10, color:'#64748b', marginTop:3 }}>데이터 {p.data} · {p.speed}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginBottom:18 }}>
+        <label style={{ fontSize:11, color:'#64748b', fontWeight:600, display:'block', marginBottom:8 }}>
+          약정 선택 <span className="tag tag-purple" style={{ marginLeft:4 }}>SID Agreement</span>
+        </label>
+        <div style={{ display:'flex', gap:8 }}>
+          {CONTRACT_OPTIONS.map(c => {
+            const on = form.contract === c.id;
+            return (
+              <div key={c.id} onClick={()=>set('contract',c.id)} style={{
+                flex:1, border:`2px solid ${on?'#7c3aed':'#334155'}`,
+                borderRadius:8, padding:'9px 8px', cursor:'pointer', textAlign:'center',
+                background: on ? '#2d1b69' : '#0f172a', transition:'all .2s' }}>
+                <div style={{ fontWeight:700, fontSize:13, color: on?'#a78bfa':'#e2e8f0' }}>{c.name}</div>
+                {c.penalty > 0 && <div style={{ fontSize:10, color:'#64748b', marginTop:2 }}>위약금 {c.penalty}개월</div>}
+                {c.penalty === 0 && <div style={{ fontSize:10, color:'#4ade80', marginTop:2 }}>위약금 없음</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <button className="btn btn-primary" style={{ width:'100%' }} disabled={!valid}
+        onClick={() => onSubmit(form)}>
+        📋 주문 생성 (TMF622 POST /productOrder)
+      </button>
+    </div>
+  );
+}
+
+// ── 본인인증 단계 ──────────────────────────────
+function StepOrderCreated({ orderId, customer, onVerify }) {
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+
+  return (
+    <div className="animate-fade">
+      <EtomBadge proc="identity_mgmt" step="본인인증 (PASS / 신분증)" api="TMF632" method="POST" endpoint="/individual/{id}/checkIdentity" />
+
+      <div style={{ background:'#0f172a', border:'1px solid #334155', borderRadius:9, padding:12, marginBottom:14 }}>
+        <div className="section-title">주문 정보</div>
+        <SIDRow label="Order ID" value={orderId} />
+        <SIDRow label="고객명" value={customer.name} />
+        <SIDRow label="주문 상태" value="⏳ identity_check_pending" />
+      </div>
+
+      <div style={{ marginBottom:14 }}>
+        <label style={{ fontSize:11, color:'#64748b', fontWeight:600, display:'block', marginBottom:6 }}>
+          인증 수단 선택
+        </label>
+        <div style={{ display:'flex', gap:8 }}>
+          {['📱 휴대폰 PASS 인증', '🪪 신분증 OCR', '💳 신용카드 인증'].map(m => (
+            <div key={m} style={{ flex:1, border:'1px solid #334155', borderRadius:7,
+              padding:'8px 6px', textAlign:'center', cursor:'pointer', fontSize:11,
+              background:'#0f172a', color:'#94a3b8' }}>{m}</div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+        <input placeholder="인증번호 6자리" value={code} onChange={e=>setCode(e.target.value)}
+          maxLength={6} style={{ flex:1 }} />
+        <button className="btn btn-ghost" onClick={()=>setSent(true)}>
+          {sent ? '✓ 발송됨' : '발송'}
+        </button>
+      </div>
+      {sent && <div style={{ fontSize:11, color:'#4ade80', marginBottom:10 }}>
+        ✅ 시뮬레이션 모드 — 인증번호 123456이 발송되었습니다
+      </div>}
+
+      <button className="btn btn-success" style={{ width:'100%' }}
+        disabled={!sent} onClick={onVerify}>
+        🪪 본인인증 완료 처리 (TMF632 PATCH)
+      </button>
+    </div>
+  );
+}
+
+// ── 개통 준비 단계 ──────────────────────────────
+function StepIdentityVerified({ plan, onActivate }) {
+  return (
+    <div className="animate-fade">
+      <EtomBadge proc="service_config" step="서비스 개통 요청" api="TMF641" method="POST" endpoint="/serviceOrder" />
+      <div style={{ background:'#0f172a', border:'1px solid #334155', borderRadius:9, padding:12, marginBottom:14 }}>
+        <div className="section-title">개통 전 최종 확인</div>
+        <SIDRow label="선택 요금제" value={plan?.name} />
+        <SIDRow label="월 요금" value={currency(plan?.price)} />
+        <SIDRow label="번호 할당" value="⏳ MSISDN 자동 배정 예정" />
+        <SIDRow label="SIM 유형" value="eSIM / 물리 SIM" />
+      </div>
+      <div style={{ background:'#14532d22', border:'1px solid #14532d', borderRadius:8, padding:10, marginBottom:14, fontSize:12, color:'#4ade80' }}>
+        ✅ 본인인증 완료 · 약관 동의 완료 · 신용 조회 통과
+      </div>
+      <button className="btn btn-primary" style={{ width:'100%' }} onClick={onActivate}>
+        ⚡ 개통 처리 시작 (TMF641 POST /serviceOrder + TMF639 Resource 할당)
+      </button>
+    </div>
+  );
+}
+
+// ── 개통중 단계 ──────────────────────────────
+function StepActivating({ progress }) {
+  const steps2 = [
+    { label:'Service Order 생성', api:'TMF641', done: progress >= 20 },
+    { label:'MSISDN 할당 (Resource Inventory)', api:'TMF639', done: progress >= 40 },
+    { label:'SIM 프로파일 다운로드', api:'TMF641', done: progress >= 60 },
+    { label:'네트워크 포트 개통', api:'RM&O', done: progress >= 80 },
+    { label:'서비스 인스턴스 등록', api:'TMF638', done: progress >= 100 },
+  ];
+  return (
+    <div className="animate-fade">
+      <EtomBadge proc="resource_provision" step="리소스 프로비저닝 진행중" api="TMF639" method="POST" endpoint="/resource" />
+      <div style={{ marginBottom:16 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'#64748b', marginBottom:6 }}>
+          <span>개통 진행률</span><span style={{ color:'#3b82f6', fontWeight:700 }}>{progress}%</span>
+        </div>
+        <div style={{ height:8, background:'#1e293b', borderRadius:4, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${progress}%`, background:'linear-gradient(90deg,#2563eb,#7c3aed)',
+            borderRadius:4, transition:'width .5s ease' }} />
+        </div>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+        {steps2.map((s,i) => (
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px',
+            background: s.done ? '#14532d22' : '#0f172a', border:`1px solid ${s.done?'#166534':'#1e293b'}`,
+            borderRadius:7, transition:'all .3s' }}>
+            <div style={{ width:20, height:20, borderRadius:'50%', display:'flex', alignItems:'center',
+              justifyContent:'center', fontSize:12,
+              background: s.done ? '#16a34a' : '#1e293b', flexShrink:0 }}>
+              {s.done ? '✓' : <span className="animate-spin" style={{ display:'block', width:10, height:10,
+                border:'2px solid #334155', borderTopColor:'#3b82f6', borderRadius:'50%' }} />}
+            </div>
+            <span style={{ flex:1, fontSize:12, color: s.done ? '#4ade80' : '#64748b' }}>{s.label}</span>
+            <span className="tag tag-blue" style={{ fontSize:9 }}>{s.api}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 이용중 단계 ──────────────────────────────
+function StepActive({ plan, addons, onPlanChange, onAddonToggle, onSuspend, onTerminate }) {
+  const [tab, setTab] = useState('overview');
+
+  return (
+    <div className="animate-fade">
+      <div style={{ display:'flex', gap:6, marginBottom:14 }}>
+        {['overview','plan','addon','manage'].map(t => {
+          const labels = { overview:'📊 현황', plan:'📱 요금제 변경', addon:'➕ 부가서비스', manage:'⚙️ 서비스 관리' };
+          return (
+            <button key={t} className={`btn ${tab===t?'btn-primary':'btn-ghost'}`}
+              style={{ fontSize:12, padding:'6px 12px' }} onClick={()=>setTab(t)}>
+              {labels[t]}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'overview' && (
+        <div>
+          <EtomBadge proc="qos_mgmt" step="서비스 이용 현황 조회" api="TMF637" method="GET" endpoint="/product?status=active" />
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:12 }}>
+            {[
+              { label:'현재 요금제', value:plan?.name, color:'#60a5fa' },
+              { label:'월 청구 예정', value:currency((plan?.price||0)+addons.reduce((s,a)=>s+a.price,0)), color:'#4ade80' },
+              { label:'부가서비스', value:`${addons.length}개 활성`, color:'#a78bfa' },
+            ].map(m=>(
+              <div key={m.label} style={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:9, padding:12, textAlign:'center' }}>
+                <div style={{ fontSize:10, color:'#64748b', marginBottom:4 }}>{m.label}</div>
+                <div style={{ fontSize:14, fontWeight:800, color:m.color }}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:9, padding:12 }}>
+            <div className="section-title">활성 서비스 인스턴스 (TMF638)</div>
+            {['음성 서비스 (Voice)','데이터 서비스 (Data)','SMS 서비스','VoLTE'].map(s=>(
+              <div key={s} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0',
+                borderBottom:'1px solid #1e293b', fontSize:11 }}>
+                <span style={{ color:'#94a3b8' }}>{s}</span>
+                <span style={{ color:'#4ade80' }}>● ACTIVE</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'plan' && (
+        <div>
+          <EtomBadge proc="order_handling" step="요금제 변경 주문" api="TMF622" method="POST" endpoint="/productOrder (amendmentType: changePlan)" />
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            {PLANS.map(p => {
+              const on = plan?.id === p.id;
+              return (
+                <div key={p.id} onClick={()=>!on && onPlanChange(p)} style={{
+                  border:`2px solid ${on?'#16a34a':'#334155'}`,
+                  borderRadius:9, padding:10, cursor: on?'default':'pointer',
+                  background: on ? '#14532d22' : '#0f172a', transition:'all .2s',
+                  opacity: on ? 1 : .8 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                    <span style={{ fontWeight:700, fontSize:13, color: on?'#4ade80':'#e2e8f0' }}>{p.name}</span>
+                    {on && <span className="tag tag-green" style={{ fontSize:9 }}>현재</span>}
+                  </div>
+                  <div style={{ fontSize:15, fontWeight:800 }}>{currency(p.price)}<span style={{ fontSize:10, color:'#64748b' }}>/월</span></div>
+                  <div style={{ fontSize:10, color:'#64748b', marginTop:3 }}>데이터 {p.data}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {tab === 'addon' && (
+        <div>
+          <EtomBadge proc="order_handling" step="부가서비스 관리" api="TMF622" method="POST" endpoint="/productOrder (add/remove)" />
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {ADDONS.map(a => {
+              const on = addons.some(x=>x.id===a.id);
+              return (
+                <div key={a.id} style={{ display:'flex', alignItems:'center', gap:10, padding:10,
+                  border:`1px solid ${on?'#334155':'#1e293b'}`, borderRadius:8,
+                  background: on ? '#1e293b' : '#0f172a', transition:'all .2s' }}>
+                  <span style={{ fontSize:22 }}>{a.icon}</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:600 }}>{a.name}</div>
+                    <div style={{ fontSize:10, color:'#64748b' }}>{a.desc} · {currency(a.price)}/월</div>
+                  </div>
+                  <button className={`btn ${on?'btn-danger':'btn-success'}`}
+                    style={{ fontSize:11, padding:'5px 10px' }} onClick={()=>onAddonToggle(a)}>
+                    {on ? '해제' : '추가'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {tab === 'manage' && (
+        <div>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            <ActionCard
+              icon="⏸" title="서비스 일시정지" color="#f97316"
+              desc="분실·도난 시 일시적으로 서비스를 중단합니다"
+              api="TMF622 + TMF641" etom="OP.2.4 QoS/SLA Mgmt"
+              btnLabel="일시정지 신청" btnClass="btn-warning"
+              onClick={onSuspend} />
+            <ActionCard
+              icon="⛔" title="서비스 해지" color="#ef4444"
+              desc="서비스를 완전히 해지하고 번호를 반납합니다"
+              api="TMF622 + TMF639" etom="OP.2.2 Order Handling"
+              btnLabel="해지 신청" btnClass="btn-danger"
+              onClick={onTerminate} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 일시정지 단계 ──────────────────────────────
+function StepSuspended({ onResume, onTerminate }) {
+  return (
+    <div className="animate-fade">
+      <EtomBadge proc="qos_mgmt" step="서비스 일시정지 상태" api="TMF641" method="GET" endpoint="/serviceOrder?state=suspended" />
+      <div style={{ background:'#431407', border:'1px solid #9a3412', borderRadius:10, padding:16, marginBottom:14, textAlign:'center' }}>
+        <div style={{ fontSize:36, marginBottom:8 }}>⏸</div>
+        <div style={{ fontSize:16, fontWeight:700, color:'#fb923c' }}>서비스 일시정지 중</div>
+        <div style={{ fontSize:12, color:'#9a3412', marginTop:4 }}>음성·데이터 서비스가 모두 중단된 상태입니다</div>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <ActionCard icon="▶️" title="서비스 재개통" color="#16a34a"
+          desc="중단된 서비스를 즉시 재활성화합니다"
+          api="TMF622 + TMF641" etom="OP.2.4 QoS/SLA Mgmt"
+          btnLabel="재개통" btnClass="btn-success" onClick={onResume} />
+        <ActionCard icon="⛔" title="서비스 해지" color="#ef4444"
+          desc="일시정지 상태에서 바로 해지 처리합니다"
+          api="TMF622 + TMF639" etom="OP.2.2 Order Handling"
+          btnLabel="해지 신청" btnClass="btn-danger" onClick={onTerminate} />
+      </div>
+    </div>
+  );
+}
+
+// ── 해지처리 단계 ──────────────────────────────
+function StepTerminating({ progress }) {
+  const steps2 = [
+    { label:'해지 Order 생성', api:'TMF622', done: progress >= 25 },
+    { label:'부가서비스 일괄 해제', api:'TMF622', done: progress >= 50 },
+    { label:'MSISDN 반납 (Resource Inventory)', api:'TMF639', done: progress >= 75 },
+    { label:'청구 계정 정산', api:'TMF678', done: progress >= 100 },
+  ];
+  return (
+    <div className="animate-fade">
+      <EtomBadge proc="billing" step="해지 처리 및 정산" api="TMF678" method="POST" endpoint="/appliedCustomerBillingRate" />
+      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+        {steps2.map((s,i) => (
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px',
+            background: s.done ? '#450a0a33' : '#0f172a',
+            border:`1px solid ${s.done?'#7f1d1d':'#1e293b'}`, borderRadius:7 }}>
+            <div style={{ width:20, height:20, borderRadius:'50%', display:'flex', alignItems:'center',
+              justifyContent:'center', fontSize:12, background: s.done?'#dc2626':'#1e293b', flexShrink:0 }}>
+              {s.done ? '✓' : <span className="animate-spin" style={{ display:'block', width:10, height:10,
+                border:'2px solid #334155', borderTopColor:'#ef4444', borderRadius:'50%' }} />}
+            </div>
+            <span style={{ flex:1, fontSize:12, color: s.done?'#f87171':'#64748b' }}>{s.label}</span>
+            <span className="tag tag-red" style={{ fontSize:9 }}>{s.api}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 해지완료 단계 ──────────────────────────────
+function StepTerminated({ customer, plan, resource, onReset }) {
+  return (
+    <div className="animate-fade">
+      <div style={{ textAlign:'center', padding:'16px 0 20px' }}>
+        <div style={{ fontSize:48, marginBottom:8 }}>⛔</div>
+        <div style={{ fontSize:20, fontWeight:800, color:'#f87171', marginBottom:4 }}>서비스 해지 완료</div>
+        <div style={{ fontSize:12, color:'#64748b' }}>모든 서비스가 종료되었습니다</div>
+      </div>
+      <div style={{ background:'#0f172a', border:'1px solid #334155', borderRadius:9, padding:12, marginBottom:14 }}>
+        <div className="section-title">해지 요약</div>
+        <SIDRow label="고객명" value={customer?.name} />
+        <SIDRow label="해지 요금제" value={plan?.name} />
+        <SIDRow label="반납 번호" value={resource?.msisdn} />
+        <SIDRow label="해지 일시" value={new Date().toLocaleString('ko-KR')} />
+      </div>
+      <button className="btn btn-ghost" style={{ width:'100%' }} onClick={onReset}>
+        + 새 고객 시뮬레이션 시작
+      </button>
+    </div>
+  );
+}
+
+// 공통 컴포넌트
+function EtomBadge({ proc, step, api, method, endpoint }) {
+  const p = ETOM_PROCESSES[proc] || {};
+  return (
+    <div style={{ background:'#0a0f1c', border:'1px solid #1e293b', borderRadius:8, padding:10, marginBottom:12 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6, flexWrap:'wrap' }}>
+        <span className="tag tag-purple">{p.code} {p.name}</span>
+        <span className="tag tag-gray">{p.domain}</span>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+        <span className="tag tag-green" style={{ fontSize:10 }}>{method}</span>
+        <span className="tag tag-blue" style={{ fontSize:10 }}>{api}</span>
+        <code style={{ fontSize:10, color:'#60a5fa', fontFamily:'monospace' }}>{endpoint}</code>
+      </div>
+      <div style={{ fontSize:11, color:'#475569', marginTop:5 }}>→ {step}</div>
+    </div>
+  );
+}
+
+function ActionCard({ icon, title, color, desc, api, etom, btnLabel, btnClass, onClick }) {
+  return (
+    <div style={{ background:'#0f172a', border:`1px solid #1e293b`, borderLeft:`3px solid ${color}`,
+      borderRadius:9, padding:12 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+        <span style={{ fontSize:20 }}>{icon}</span>
+        <span style={{ fontWeight:700, fontSize:14, color:'#f1f5f9' }}>{title}</span>
+      </div>
+      <div style={{ fontSize:12, color:'#64748b', marginBottom:8 }}>{desc}</div>
+      <div style={{ display:'flex', gap:4, marginBottom:10, flexWrap:'wrap' }}>
+        <span className="tag tag-blue" style={{ fontSize:9 }}>{api}</span>
+        <span className="tag tag-purple" style={{ fontSize:9 }}>{etom}</span>
+      </div>
+      <button className={`btn ${btnClass}`} style={{ fontSize:12 }} onClick={onClick}>{btnLabel}</button>
+    </div>
+  );
+}
+
+// TM Forum 참조 패널 (하단)
+function TmForumRefPanel({ state }) {
+  const refs = {
+    idle:              ['TMF622','TMF632','TMF620'],
+    order_created:     ['TMF622','TMF632'],
+    identity_verified: ['TMF622','TMF641','TMF639'],
+    activating:        ['TMF641','TMF639','TMF638'],
+    active:            ['TMF637','TMF638','TMF622','TMF666','TMF678'],
+    suspended:         ['TMF622','TMF641'],
+    terminating:       ['TMF622','TMF639','TMF678'],
+    terminated:        ['TMF666','TMF678'],
+  };
+  const relevant = refs[state] || [];
+  return (
+    <div style={{ background:'#0a0f1c', borderTop:'1px solid #1e293b', padding:'10px 24px',
+      display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+      <span style={{ fontSize:10, color:'#475569', fontWeight:700, flexShrink:0 }}>TM Forum Open APIs</span>
+      {relevant.map(api => (
+        <div key={api} style={{ display:'flex', alignItems:'center', gap:5 }}>
+          <span className="tag tag-blue" style={{ fontSize:10 }}>{api}</span>
+          <span style={{ fontSize:10, color:'#334155' }}>{TMF_APIS[api]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// 메인 App
+// ══════════════════════════════════════════════
+function App() {
+  const [state, setState]         = useState('idle');
+  const [customer, setCustomer]   = useState({});
+  const [plan, setPlan]           = useState(null);
+  const [agreement, setAgreement] = useState(null);
+  const [addons, setAddons]       = useState([]);
+  const [resource, setResource]   = useState({});
+  const [orderId, setOrderId]     = useState('');
+  const [events, setEvents]       = useState([]);
+  const [progress, setProgress]   = useState(0);
+  const [planChanges, setPlanChanges] = useState(0);
+
+  const addEvent = useCallback((ev) => {
+    setEvents(prev => [...prev, { ...ev, time: ts() }]);
+  }, []);
+
+  // 개통/해지 자동 진행
+  useEffect(() => {
+    if (state === 'activating') {
+      setProgress(0);
+      const steps = [
+        [500,  20, { method:'POST', api:'TMF641', status:201, endpoint:'/serviceOrder', desc:'Service Order 생성', etom:'OP.3.4', sid:'ServiceOrder' }],
+        [1200, 40, { method:'POST', api:'TMF639', status:201, endpoint:'/resource (MSISDN 할당)', desc:`MSISDN ${resource.msisdn} 할당 완료`, etom:'OP.4.2', sid:'Resource' }],
+        [1900, 60, { method:'PATCH', api:'TMF641', status:200, endpoint:'/serviceOrder/{id}', desc:'SIM 프로파일 다운로드 완료', etom:'OP.3.4', sid:'Service' }],
+        [2600, 80, { method:'POST', api:'TMF639', status:201, endpoint:'/resource (networkPort)', desc:'네트워크 포트 개통', etom:'OP.4.2', sid:'Resource' }],
+        [3300,100, { method:'POST', api:'TMF638', status:201, endpoint:'/service', desc:'서비스 인스턴스 등록 완료 → ACTIVE', etom:'OP.3.4', sid:'Service' }],
+      ];
+      const timers = steps.map(([delay, prog, ev]) =>
+        setTimeout(() => { setProgress(prog); addEvent(ev); if (prog===100) setTimeout(()=>setState('active'),400); }, delay)
+      );
+      return () => timers.forEach(clearTimeout);
+    }
+    if (state === 'terminating') {
+      setProgress(0);
+      const steps = [
+        [500,  25, { method:'POST', api:'TMF622', status:201, endpoint:'/productOrder (terminate)', desc:'해지 Order 생성', etom:'OP.2.2' }],
+        [1100, 50, { method:'DELETE', api:'TMF622', status:200, endpoint:'/product/{id}/addons', desc:'부가서비스 일괄 해제', etom:'OP.2.2' }],
+        [1700, 75, { method:'PATCH', api:'TMF639', status:200, endpoint:'/resource/{msisdn}', desc:'MSISDN 반납 처리', etom:'OP.4.2' }],
+        [2300,100, { method:'POST', api:'TMF678', status:201, endpoint:'/appliedCustomerBillingRate', desc:'최종 정산 완료 → TERMINATED', etom:'OP.2.5' }],
+      ];
+      const timers = steps.map(([delay, prog, ev]) =>
+        setTimeout(() => { setProgress(prog); addEvent(ev); if (prog===100) setTimeout(()=>setState('terminated'),400); }, delay)
+      );
+      return () => timers.forEach(clearTimeout);
+    }
+  }, [state]);
+
+  // 가입 신청
+  const handleIdle = (form) => {
+    const selectedPlan = PLANS.find(p=>p.id===form.plan);
+    const selectedContract = CONTRACT_OPTIONS.find(c=>c.id===form.contract);
+    const oid = generateOrderId();
+    const cid = 'CUS-' + Date.now().toString(36).toUpperCase().slice(-6);
+    setCustomer({ name:form.name, birth:form.birth, phone:form.phone, email:form.email, id:cid, verified:false });
+    setPlan(selectedPlan);
+    setAgreement(selectedContract);
+    setOrderId(oid);
+    setResource({});
+    addEvent({ method:'POST', api:'TMF622', status:201, endpoint:'/productOrder', desc:`주문 생성 완료 — ${selectedPlan?.name}`, etom:'OP.2.2', sid:'ProductOrder', level:'info' });
+    addEvent({ method:'POST', api:'TMF666', status:201, endpoint:'/billingAccount', desc:'청구 계정 생성', etom:'OP.2.5', sid:'Account', level:'info' });
+    setState('order_created');
+  };
+
+  // 본인인증
+  const handleVerify = () => {
+    setCustomer(p=>({ ...p, verified:true, joinedAt:new Date().toLocaleString('ko-KR') }));
+    const msisdn = generateMSISDN();
+    const iccid  = generateICCID();
+    setResource({ msisdn, iccid, network: plan?.type || '5G' });
+    addEvent({ method:'PATCH', api:'TMF632', status:200, endpoint:'/individual/{id}/checkIdentity', desc:'본인인증 완료 (PASS)', etom:'OP.2.1', sid:'Party', level:'info' });
+    addEvent({ method:'GET',   api:'TMF639', status:200, endpoint:`/resource?type=MSISDN&status=available`, desc:`가용 MSISDN 조회 → ${msisdn}`, etom:'OP.4.2', sid:'Resource', level:'info' });
+    setState('identity_verified');
+  };
+
+  // 개통 시작
+  const handleActivate = () => {
+    addEvent({ method:'POST', api:'TMF641', status:201, endpoint:'/serviceOrder', desc:'서비스 개통 Order 생성', etom:'OP.3.4', sid:'ServiceOrder', level:'info' });
+    setState('activating');
+  };
+
+  // 요금제 변경
+  const handlePlanChange = (newPlan) => {
+    const old = plan?.name;
+    setPlan(newPlan);
+    setPlanChanges(c=>c+1);
+    addEvent({ method:'POST', api:'TMF622', status:201, endpoint:'/productOrder (amendmentType:changePlan)', desc:`요금제 변경: ${old} → ${newPlan.name}`, etom:'OP.2.2', sid:'ProductOrder', level:'info' });
+    addEvent({ method:'PATCH', api:'TMF637', status:200, endpoint:'/product/{id}', desc:'Product Inventory 업데이트', etom:'OP.2.2', sid:'Product', level:'info' });
+  };
+
+  // 부가서비스 토글
+  const handleAddonToggle = (addon) => {
+    const on = addons.some(a=>a.id===addon.id);
+    setAddons(prev => on ? prev.filter(a=>a.id!==addon.id) : [...prev, addon]);
+    addEvent({
+      method: on ? 'DELETE' : 'POST', api:'TMF622', status: on ? 200 : 201,
+      endpoint: on ? `/product/${addon.id}` : '/productOrder (add addon)',
+      desc: `부가서비스 ${on?'해제':'추가'}: ${addon.name}`, etom:'OP.2.2', sid:'ProductOrder', level:'info',
+    });
+  };
+
+  // 일시정지
+  const handleSuspend = () => {
+    addEvent({ method:'POST', api:'TMF622', status:201, endpoint:'/productOrder (suspend)', desc:'서비스 일시정지 처리', etom:'OP.2.4', sid:'ProductOrder', level:'warn' });
+    addEvent({ method:'PATCH', api:'TMF641', status:200, endpoint:'/serviceOrder/{id}?action=suspend', desc:'Service Order 일시정지 적용', etom:'OP.3.4', sid:'Service', level:'warn' });
+    setState('suspended');
+  };
+
+  // 재개통
+  const handleResume = () => {
+    addEvent({ method:'POST', api:'TMF622', status:201, endpoint:'/productOrder (resume)', desc:'서비스 재개통 처리', etom:'OP.2.4', sid:'ProductOrder', level:'info' });
+    addEvent({ method:'PATCH', api:'TMF641', status:200, endpoint:'/serviceOrder/{id}?action=resume', desc:'Service 재활성화 완료', etom:'OP.3.4', sid:'Service', level:'info' });
+    setState('active');
+  };
+
+  // 해지
+  const handleTerminate = () => {
+    addEvent({ method:'POST', api:'TMF622', status:201, endpoint:'/productOrder (terminate)', desc:'해지 신청 접수', etom:'OP.2.2', sid:'ProductOrder', level:'error' });
+    setState('terminating');
+  };
+
+  // 초기화
+  const handleReset = () => {
+    setState('idle'); setCustomer({}); setPlan(null); setAgreement(null);
+    setAddons([]); setResource({}); setOrderId(''); setEvents([]); setProgress(0); setPlanChanges(0);
+  };
+
+  const stateLabel = STATES[state];
+
+  const centerContent = {
+    idle:               { title:'가입 신청',       sub:'고객 정보 입력 및 요금제 선택' },
+    order_created:      { title:'본인인증',         sub:'PASS 또는 신분증으로 본인 확인' },
+    identity_verified:  { title:'개통 준비',        sub:'서비스 개통 전 최종 확인' },
+    activating:         { title:'개통 처리중',      sub:'리소스 프로비저닝 자동 진행' },
+    active:             { title:'서비스 이용중',    sub:'요금제 변경·부가서비스·서비스 관리' },
+    suspended:          { title:'서비스 일시정지', sub:'재개통 또는 해지 선택' },
+    terminating:        { title:'해지 처리중',      sub:'정산 및 리소스 반납 자동 진행' },
+    terminated:         { title:'해지 완료',        sub:'서비스가 종료되었습니다' },
+  }[state];
+
+  return (
+    <div style={{ minHeight:'100vh', background:'#0f172a', display:'flex', flexDirection:'column' }}>
+      <TopNav />
+      <LifecycleBar state={state} planChanges={planChanges} />
+
+      <div style={{ flex:1, display:'flex', gap:0, overflow:'hidden' }}>
+        {/* 왼쪽 — SID 엔티티 */}
+        <div style={{ width:284, flexShrink:0, borderRight:'1px solid #1e293b',
+          padding:'16px 12px', overflowY:'auto' }}>
+          <LeftPanel customer={customer} plan={plan} resource={resource}
+            agreement={agreement} addons={addons} state={state} />
+        </div>
+
+        {/* 가운데 — 액션 */}
+        <div style={{ flex:1, padding:'16px 20px', overflowY:'auto' }}>
+          <div style={{ maxWidth:680, margin:'0 auto' }}>
+            {/* 단계 헤더 */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+              <div style={{ width:40, height:40, borderRadius:'50%', background:stateLabel.color+'22',
+                border:`2px solid ${stateLabel.color}`, display:'flex', alignItems:'center',
+                justifyContent:'center', fontSize:20 }}>{stateLabel.icon}</div>
+              <div>
+                <h2 style={{ fontSize:16, fontWeight:800, color:'#f1f5f9', margin:0 }}>{centerContent.title}</h2>
+                <p style={{ fontSize:11, color:'#64748b', margin:0 }}>{centerContent.sub}</p>
+              </div>
+              <div style={{ marginLeft:'auto', display:'flex', gap:6, flexWrap:'wrap' }}>
+                {orderId && <span className="tag tag-gray" style={{ fontSize:10 }}>{orderId}</span>}
+              </div>
+            </div>
+
+            {/* 단계별 콘텐츠 */}
+            <div style={{ background:'#1e293b', border:'1px solid #334155', borderRadius:14, padding:20 }}>
+              {state === 'idle'              && <StepIdle onSubmit={handleIdle} />}
+              {state === 'order_created'     && <StepOrderCreated orderId={orderId} customer={customer} onVerify={handleVerify} />}
+              {state === 'identity_verified' && <StepIdentityVerified plan={plan} onActivate={handleActivate} />}
+              {state === 'activating'        && <StepActivating progress={progress} />}
+              {state === 'active'            && <StepActive plan={plan} addons={addons} onPlanChange={handlePlanChange} onAddonToggle={handleAddonToggle} onSuspend={handleSuspend} onTerminate={handleTerminate} />}
+              {state === 'suspended'         && <StepSuspended onResume={handleResume} onTerminate={handleTerminate} />}
+              {state === 'terminating'       && <StepTerminating progress={progress} />}
+              {state === 'terminated'        && <StepTerminated customer={customer} plan={plan} resource={resource} onReset={handleReset} />}
+            </div>
+          </div>
+        </div>
+
+        {/* 오른쪽 — 이벤트 로그 */}
+        <div style={{ width:316, flexShrink:0, borderLeft:'1px solid #1e293b',
+          padding:'16px 12px', overflowY:'auto' }}>
+          <EventLog events={events} />
+        </div>
+      </div>
+
+      <TmForumRefPanel state={state} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
