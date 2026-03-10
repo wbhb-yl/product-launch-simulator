@@ -810,115 +810,272 @@ function LifecycleSimulator() {
 
   // 상태별 패널
   function IdlePanel() {
+    const discountAmt = selPlan ? Math.round(selPlan.price * (contractOpt?.discount || 0)) : 0;
     return (
-      <div style={{ maxWidth:760, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:44, marginBottom:8 }}>📱</div>
-          <h2 style={{ fontSize:20, fontWeight:800, color:"#1e293b", marginBottom:4 }}>요금제 가입</h2>
+      <div style={{ padding:"24px 0", animation:"fadeIn .25s ease" }}>
+
+        {/* 타이틀 — 전체 너비 */}
+        <div style={{ textAlign:"center", marginBottom:20 }}>
+          <div style={{ fontSize:40, marginBottom:6 }}>📱</div>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b", marginBottom:4 }}>요금제 가입</h2>
           <p style={{ color:"#64748b", fontSize:13 }}>요금제를 선택하고 서비스를 신청하세요.</p>
         </div>
-        <div style={{ ...LC_CARD, marginBottom:14 }}>
-          <h3 style={sectionTitle}>요금제 선택</h3>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))", gap:10 }}>
-            {LC_PLANS.map(p => {
-              const sel = plan === p.id;
-              return (
-                <div key={p.id} onClick={() => setPlan(p.id)} style={{ padding:14, borderRadius:10, border:`2px solid ${sel?"#2563eb":"#e2e8f0"}`, background:sel?"#eff6ff":"#fafafa", cursor:"pointer", transition:"all .15s" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                    <span style={{ background:"#dbeafe", color:"#2563eb", borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{p.badge}</span>
-                    {sel && <span style={{ fontSize:11, color:"#2563eb", fontWeight:700 }}>✓</span>}
-                  </div>
-                  <div style={{ fontWeight:700, fontSize:13, color:"#1e293b", marginBottom:2 }}>{p.name}</div>
-                  <div style={{ fontSize:11, color:"#64748b", marginBottom:8 }}>{p.data}</div>
-                  <div style={{ fontSize:15, fontWeight:800, color:"#2563eb" }}>{p.price.toLocaleString()}원<span style={{ fontSize:10, fontWeight:400, color:"#94a3b8" }}>/월</span></div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {plan && <>
+        {/* 2열 레이아웃 */}
+        <div style={{ display:"flex", gap:20, alignItems:"flex-start" }}>
+
+        {/* 왼쪽 — 선택 영역 */}
+        <div style={{ flex:1, minWidth:0 }}>
           <div style={{ ...LC_CARD, marginBottom:14 }}>
-            <h3 style={sectionTitle}>부가서비스</h3>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:8 }}>
-              {LC_ADDONS.map(a => {
-                const sel = !!addons[a.id];
+            <h3 style={sectionTitle}>요금제 선택</h3>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              {LC_PLANS.map(p => {
+                const sel = plan === p.id;
                 return (
-                  <label key={a.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", borderRadius:8, border:`1.5px solid ${sel?"#2563eb":"#e2e8f0"}`, background:sel?"#eff6ff":"#fafafa", cursor:"pointer" }}>
-                    <input type="checkbox" checked={sel} onChange={e => setAddons(p => ({ ...p, [a.id]: e.target.checked }))} />
-                    <span style={{ fontSize:14 }}>{a.icon}</span>
-                    <div>
-                      <div style={{ fontSize:12, fontWeight:600, color:"#1e293b" }}>{a.name}</div>
-                      <div style={{ fontSize:11, color:a.price < 0 ? "#16a34a" : "#2563eb", fontWeight:700 }}>{a.price < 0 ? "-" : "+"}{Math.abs(a.price).toLocaleString()}원</div>
+                  <div key={p.id} onClick={() => setPlan(p.id)} style={{ padding:14, borderRadius:10, border:`2px solid ${sel?"#2563eb":"#e2e8f0"}`, background:sel?"#eff6ff":"#fafafa", cursor:"pointer", transition:"all .15s" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                      <span style={{ background:"#dbeafe", color:"#2563eb", borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{p.badge}</span>
+                      {sel && <span style={{ fontSize:11, color:"#2563eb", fontWeight:700 }}>✓</span>}
                     </div>
-                  </label>
+                    <div style={{ fontWeight:700, fontSize:13, color:"#1e293b", marginBottom:2 }}>{p.name}</div>
+                    <div style={{ fontSize:11, color:"#64748b", marginBottom:8 }}>{p.data}</div>
+                    <div style={{ fontSize:15, fontWeight:800, color:"#2563eb" }}>{p.price.toLocaleString()}원<span style={{ fontSize:10, fontWeight:400, color:"#94a3b8" }}>/월</span></div>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          <div style={{ ...LC_CARD, marginBottom:14 }}>
-            <h3 style={sectionTitle}>약정 선택</h3>
-            <div style={{ display:"flex", gap:10 }}>
-              {LC_CONTRACT.map(c => (
-                <label key={c.id} style={{ flex:1, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${contract===c.id?"#2563eb":"#e2e8f0"}`, background:contract===c.id?"#eff6ff":"#fafafa", cursor:"pointer", display:"flex", flexDirection:"column", gap:4 }}>
-                  <input type="radio" name="lc_contract" value={c.id} checked={contract===c.id} onChange={() => setContract(c.id)} style={{ display:"none" }} />
-                  <span style={{ fontWeight:700, fontSize:13, color:"#1e293b" }}>{c.label}</span>
-                  {c.discount > 0 && <span style={{ fontSize:11, color:"#16a34a", fontWeight:600 }}>월 {(c.discount*100).toFixed(0)}% 할인</span>}
-                </label>
-              ))}
+          {plan && <>
+            <div style={{ ...LC_CARD, marginBottom:14 }}>
+              <h3 style={sectionTitle}>부가서비스</h3>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:8 }}>
+                {LC_ADDONS.map(a => {
+                  const sel = !!addons[a.id];
+                  return (
+                    <label key={a.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", borderRadius:8, border:`1.5px solid ${sel?"#2563eb":"#e2e8f0"}`, background:sel?"#eff6ff":"#fafafa", cursor:"pointer" }}>
+                      <input type="checkbox" checked={sel} onChange={e => setAddons(p => ({ ...p, [a.id]: e.target.checked }))} />
+                      <span style={{ fontSize:14 }}>{a.icon}</span>
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:600, color:"#1e293b" }}>{a.name}</div>
+                        <div style={{ fontSize:11, color:a.price < 0 ? "#16a34a" : "#2563eb", fontWeight:700 }}>{a.price < 0 ? "-" : "+"}{Math.abs(a.price).toLocaleString()}원</div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          <div style={{ ...LC_CARD, marginBottom:14 }}>
-            <h3 style={sectionTitle}>예상 월 요금</h3>
-            <div style={{ fontSize:26, fontWeight:800, color:"#2563eb" }}>{totalPrice.toLocaleString()}<span style={{ fontSize:14, color:"#94a3b8", fontWeight:400 }}>원/월</span></div>
-            {contractOpt?.discount > 0 && <div style={{ fontSize:12, color:"#16a34a", marginTop:4 }}>약정 할인 {(contractOpt.discount*100).toFixed(0)}% 적용됨</div>}
-          </div>
+            <div style={{ ...LC_CARD, marginBottom:14 }}>
+              <h3 style={sectionTitle}>약정 선택</h3>
+              <div style={{ display:"flex", gap:10 }}>
+                {LC_CONTRACT.map(c => (
+                  <label key={c.id} style={{ flex:1, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${contract===c.id?"#2563eb":"#e2e8f0"}`, background:contract===c.id?"#eff6ff":"#fafafa", cursor:"pointer", display:"flex", flexDirection:"column", gap:4 }}>
+                    <input type="radio" name="lc_contract" value={c.id} checked={contract===c.id} onChange={() => setContract(c.id)} style={{ display:"none" }} />
+                    <span style={{ fontWeight:700, fontSize:13, color:"#1e293b" }}>{c.label}</span>
+                    {c.discount > 0 && <span style={{ fontSize:11, color:"#16a34a", fontWeight:600 }}>월 {(c.discount*100).toFixed(0)}% 할인</span>}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </>}
+        </div>
 
-          <div style={{ textAlign:"right" }}>
-            <button style={btnPrimary} onClick={() => setState(LC_STATES.ordering)}>신청하기 →</button>
+        {/* 오른쪽 — 미리보기 패널 */}
+        <div style={{ width:250, flexShrink:0 }}>
+          <div style={{ ...LC_CARD, position:"sticky", top:72 }}>
+            <h3 style={sectionTitle}>📋 가입 미리보기</h3>
+
+            {!selPlan ? (
+              <div style={{ textAlign:"center", padding:"24px 0", color:"#94a3b8", fontSize:13 }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>☝️</div>
+                왼쪽에서 요금제를<br/>선택해주세요
+              </div>
+            ) : (
+              <>
+                {/* 요금제 카드 */}
+                <div style={{ background:"linear-gradient(135deg,#1d4ed8 0%,#7c3aed 100%)", borderRadius:12, padding:14, color:"#fff", marginBottom:14 }}>
+                  <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{selPlan.badge}</span>
+                  <div style={{ fontSize:16, fontWeight:800, marginTop:8, marginBottom:3 }}>{selPlan.name}</div>
+                  <div style={{ fontSize:11, opacity:0.8, marginBottom:10 }}>데이터 {selPlan.data}</div>
+                  <div style={{ fontSize:24, fontWeight:800 }}>
+                    {totalPrice.toLocaleString()}
+                    <span style={{ fontSize:12, fontWeight:400, opacity:0.8 }}>원/월</span>
+                  </div>
+                </div>
+
+                {/* 부가서비스 목록 */}
+                {addonList.length > 0 && (
+                  <div style={{ marginBottom:12 }}>
+                    <div style={{ fontSize:11, color:"#64748b", fontWeight:600, marginBottom:6 }}>부가서비스 ({addonList.length}개)</div>
+                    {addonList.map(a => (
+                      <div key={a.id} style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:3 }}>
+                        <span style={{ color:"#374151" }}>{a.icon} {a.name}</span>
+                        <span style={{ color: a.price < 0 ? "#16a34a" : "#64748b", fontWeight:600 }}>
+                          {a.price < 0 ? "-" : "+"}{Math.abs(a.price).toLocaleString()}원
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 요금 내역 */}
+                <div style={{ borderTop:"1px solid #e2e8f0", paddingTop:10, marginBottom:14 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                    <span style={{ color:"#64748b" }}>기본료</span>
+                    <span>{selPlan.price.toLocaleString()}원</span>
+                  </div>
+                  {discountAmt > 0 && (
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                      <span style={{ color:"#16a34a" }}>약정 할인 ({(contractOpt.discount*100).toFixed(0)}%)</span>
+                      <span style={{ color:"#16a34a" }}>-{discountAmt.toLocaleString()}원</span>
+                    </div>
+                  )}
+                  {addonList.length > 0 && (
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                      <span style={{ color:"#64748b" }}>부가서비스</span>
+                      <span style={{ color: addonPrice < 0 ? "#16a34a" : "#374151" }}>
+                        {addonPrice >= 0 ? "+" : ""}{addonPrice.toLocaleString()}원
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ display:"flex", justifyContent:"space-between", fontWeight:700, fontSize:14, color:"#1e293b", borderTop:"1px solid #e2e8f0", paddingTop:8, marginTop:4 }}>
+                    <span>월 납부금액</span>
+                    <span style={{ color:"#2563eb" }}>{totalPrice.toLocaleString()}원</span>
+                  </div>
+                </div>
+
+                {/* 약정 정보 */}
+                <div style={{ background: contractOpt?.discount > 0 ? "#f0fdf4" : "#f8fafc", borderRadius:8, padding:"8px 10px", marginBottom:14, fontSize:12, color: contractOpt?.discount > 0 ? "#15803d" : "#64748b", fontWeight:600 }}>
+                  📄 {contractOpt?.label}
+                  {contractOpt?.discount > 0 && ` · ${(contractOpt.discount*100).toFixed(0)}% 할인 적용`}
+                </div>
+
+                {/* 신청 버튼 */}
+                <button style={{ ...btnPrimary, width:"100%" }} onClick={() => setState(LC_STATES.ordering)}>
+                  신청하기 →
+                </button>
+              </>
+            )}
           </div>
-        </>}
+        </div>
+
+        </div> {/* 2열 레이아웃 닫기 */}
       </div>
     );
   }
 
   function OrderingPanel() {
+    const discountAmt = selPlan ? Math.round(selPlan.price * (contractOpt?.discount || 0)) : 0;
     return (
-      <div style={{ maxWidth:520, margin:"0 auto", padding:"24px 0", animation:"fadeIn .25s ease" }}>
-        <div style={{ ...LC_CARD, marginBottom:14 }}>
-          <h3 style={sectionTitle}>고객 정보 입력</h3>
-          <div style={{ display:"grid", gap:12 }}>
-            <div><label style={labelStyle}>이름</label><input style={inputStyle} value={custName} onChange={e => setCustName(e.target.value)} placeholder="홍길동" /></div>
-            <div>
-              <label style={labelStyle}>신규 번호</label>
-              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                <div style={{ ...inputStyle, flex:1, display:"flex", alignItems:"center", background:custPhone?"#f0fdf4":"#f8fafc", borderColor:custPhone?"#86efac":"#e2e8f0", color:custPhone?"#15803d":"#94a3b8", fontWeight:custPhone?700:400 }}>
-                  {custPhone || "번호를 생성해주세요"}
+      <div style={{ display:"flex", gap:20, alignItems:"flex-start", padding:"24px 0", animation:"fadeIn .25s ease" }}>
+
+        {/* 왼쪽 — 정보 입력 영역 */}
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ ...LC_CARD, marginBottom:14 }}>
+            <h3 style={sectionTitle}>고객 정보 입력</h3>
+            <div style={{ display:"grid", gap:12 }}>
+              <div><label style={labelStyle}>이름</label><input style={inputStyle} value={custName} onChange={e => setCustName(e.target.value)} placeholder="홍길동" /></div>
+              <div>
+                <label style={labelStyle}>신규 번호</label>
+                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                  <div style={{ ...inputStyle, flex:1, display:"flex", alignItems:"center", background:custPhone?"#f0fdf4":"#f8fafc", borderColor:custPhone?"#86efac":"#e2e8f0", color:custPhone?"#15803d":"#94a3b8", fontWeight:custPhone?700:400 }}>
+                    {custPhone || "번호를 생성해주세요"}
+                  </div>
+                  <button
+                    style={{ ...btnPrimary, padding:"9px 14px", fontSize:12, whiteSpace:"nowrap", flexShrink:0, background:custPhone?"#0f766e":"#2563eb" }}
+                    onClick={() => setCustPhone("010-" + Math.floor(1000 + Math.random() * 9000) + "-" + Math.floor(1000 + Math.random() * 9000))}
+                  >
+                    {custPhone ? "🔄 재생성" : "✨ 번호 생성"}
+                  </button>
                 </div>
-                <button
-                  style={{ ...btnPrimary, padding:"9px 14px", fontSize:12, whiteSpace:"nowrap", flexShrink:0, background:custPhone?"#0f766e":"#2563eb" }}
-                  onClick={() => setCustPhone("010-" + Math.floor(1000 + Math.random() * 9000) + "-" + Math.floor(1000 + Math.random() * 9000))}
-                >
-                  {custPhone ? "🔄 재생성" : "✨ 번호 생성"}
-                </button>
+                {custPhone && <div style={{ fontSize:11, color:"#16a34a", marginTop:4 }}>✓ 신규 번호가 배정되었습니다</div>}
               </div>
-              {custPhone && <div style={{ fontSize:11, color:"#16a34a", marginTop:4 }}>✓ 신규 번호가 배정되었습니다</div>}
+              <div><label style={labelStyle}>주민등록번호 앞 7자리</label><input style={inputStyle} value={custId} onChange={e => setCustId(e.target.value)} placeholder="YYMMDD-X" maxLength={8} /></div>
             </div>
-            <div><label style={labelStyle}>주민등록번호 앞 7자리</label><input style={inputStyle} value={custId} onChange={e => setCustId(e.target.value)} placeholder="YYMMDD-X" maxLength={8} /></div>
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <button style={btnSecondary} onClick={() => setState(LC_STATES.idle)}>← 뒤로</button>
+            <button style={{ ...btnPrimary, flex:1 }} disabled={!custName || !custPhone || custId.length < 7} onClick={() => setState(LC_STATES.verifying)}>
+              본인인증 →
+            </button>
           </div>
         </div>
-        <div style={{ ...LC_CARD, marginBottom:14, background:"#f8fafc" }}>
-          <p style={{ fontSize:13, color:"#64748b", marginBottom:4 }}>선택 요금제</p>
-          <p style={{ fontWeight:700, color:"#1e293b" }}>{selPlan?.name} — {totalPrice.toLocaleString()}원/월</p>
+
+        {/* 오른쪽 — 미리보기 패널 */}
+        <div style={{ width:250, flexShrink:0 }}>
+          <div style={{ ...LC_CARD, position:"sticky", top:72 }}>
+            <h3 style={sectionTitle}>📋 가입 미리보기</h3>
+
+            {!selPlan ? (
+              <div style={{ textAlign:"center", padding:"24px 0", color:"#94a3b8", fontSize:13 }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>☝️</div>
+                왼쪽에서 요금제를<br/>선택해주세요
+              </div>
+            ) : (
+              <>
+                {/* 요금제 카드 */}
+                <div style={{ background:"linear-gradient(135deg,#1d4ed8 0%,#7c3aed 100%)", borderRadius:12, padding:14, color:"#fff", marginBottom:14 }}>
+                  <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{selPlan.badge}</span>
+                  <div style={{ fontSize:16, fontWeight:800, marginTop:8, marginBottom:3 }}>{selPlan.name}</div>
+                  <div style={{ fontSize:11, opacity:0.8, marginBottom:10 }}>데이터 {selPlan.data}</div>
+                  <div style={{ fontSize:24, fontWeight:800 }}>
+                    {totalPrice.toLocaleString()}
+                    <span style={{ fontSize:12, fontWeight:400, opacity:0.8 }}>원/월</span>
+                  </div>
+                </div>
+
+                {/* 부가서비스 목록 */}
+                {addonList.length > 0 && (
+                  <div style={{ marginBottom:12 }}>
+                    <div style={{ fontSize:11, color:"#64748b", fontWeight:600, marginBottom:6 }}>부가서비스 ({addonList.length}개)</div>
+                    {addonList.map(a => (
+                      <div key={a.id} style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:3 }}>
+                        <span style={{ color:"#374151" }}>{a.icon} {a.name}</span>
+                        <span style={{ color: a.price < 0 ? "#16a34a" : "#64748b", fontWeight:600 }}>
+                          {a.price < 0 ? "-" : "+"}{Math.abs(a.price).toLocaleString()}원
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 요금 내역 */}
+                <div style={{ borderTop:"1px solid #e2e8f0", paddingTop:10, marginBottom:14 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                    <span style={{ color:"#64748b" }}>기본료</span>
+                    <span>{selPlan.price.toLocaleString()}원</span>
+                  </div>
+                  {discountAmt > 0 && (
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                      <span style={{ color:"#16a34a" }}>약정 할인 ({(contractOpt.discount*100).toFixed(0)}%)</span>
+                      <span style={{ color:"#16a34a" }}>-{discountAmt.toLocaleString()}원</span>
+                    </div>
+                  )}
+                  {addonList.length > 0 && (
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                      <span style={{ color:"#64748b" }}>부가서비스</span>
+                      <span style={{ color: addonPrice < 0 ? "#16a34a" : "#374151" }}>
+                        {addonPrice >= 0 ? "+" : ""}{addonPrice.toLocaleString()}원
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ display:"flex", justifyContent:"space-between", fontWeight:700, fontSize:14, color:"#1e293b", borderTop:"1px solid #e2e8f0", paddingTop:8, marginTop:4 }}>
+                    <span>월 납부금액</span>
+                    <span style={{ color:"#2563eb" }}>{totalPrice.toLocaleString()}원</span>
+                  </div>
+                </div>
+
+                {/* 약정 정보 */}
+                <div style={{ background: contractOpt?.discount > 0 ? "#f0fdf4" : "#f8fafc", borderRadius:8, padding:"8px 10px", fontSize:12, color: contractOpt?.discount > 0 ? "#15803d" : "#64748b", fontWeight:600 }}>
+                  📄 {contractOpt?.label}
+                  {contractOpt?.discount > 0 && ` · ${(contractOpt.discount*100).toFixed(0)}% 할인 적용`}
+                </div>
+              </>
+            )}
+          </div>
         </div>
-        <div style={{ display:"flex", gap:10 }}>
-          <button style={btnSecondary} onClick={() => setState(LC_STATES.idle)}>← 뒤로</button>
-          <button style={{ ...btnPrimary, flex:1 }} disabled={!custName || !custPhone || custId.length < 7} onClick={() => setState(LC_STATES.verifying)}>
-            본인인증 →
-          </button>
-        </div>
+
       </div>
     );
   }
@@ -1034,6 +1191,18 @@ function LifecycleSimulator() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* 초기화 버튼 */}
+          <div style={{ borderTop:"1px solid #e2e8f0", paddingTop:14, marginTop:4 }}>
+            <button
+              style={{ width:"100%", padding:"10px 16px", borderRadius:10, border:"1.5px solid #e2e8f0", background:"#fff", color:"#94a3b8", fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all .15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor="#fca5a5"; e.currentTarget.style.color="#ef4444"; e.currentTarget.style.background="#fff5f5"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor="#e2e8f0"; e.currentTarget.style.color="#94a3b8"; e.currentTarget.style.background="#fff"; }}
+              onClick={() => { if (window.confirm("모든 정보를 초기화하고 처음으로 돌아갈까요?")) reset(); }}
+            >
+              🔄 처음부터 다시 시작
+            </button>
           </div>
         </div>
       </div>
